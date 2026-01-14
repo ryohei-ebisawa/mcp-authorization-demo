@@ -13,7 +13,7 @@ import { MockDatabaseConfig as DatabaseConfig } from './config/mock-database.js'
 import { AuthService } from './services/AuthService.js';
 import { authRoutes } from './routes/auth.js';
 import { ticketRoutes } from './routes/tickets.js';
-import { oauthRoutes } from './oauth/routes/oauth-routes.js';
+// import { oauthRoutes } from './oauth/routes/oauth-routes.js';
 import { logger } from './utils/logger.js';
 import { csrfTokenMiddleware } from './middleware/csrf.js';
 
@@ -106,7 +106,7 @@ app.use(csrfTokenMiddleware);
 
 app.use('/auth', authRoutes);
 app.use('/api', ticketRoutes);
-app.use('/oauth', oauthRoutes);
+// app.use('/oauth', oauthRoutes);
 
 // OAuth 2.0 Metadata Endpoints (RFC 8414)
 import { getAuthorizationServerMetadata } from './oauth/controllers/authorization-server-metadata.js';

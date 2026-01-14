@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthorizationDetailsElement } from "@authlete/typescript-sdk/models";
-import { getAuthleteContext } from "../authlete-sdk.js";
+// import { getAuthleteContext } from "../authlete-sdk.js";
 import { oauthLogger } from "../../utils/logger.js";
 import { getOAuthConfig } from "../config/oauth-config.js";
 
@@ -29,7 +29,7 @@ interface AuthenticatedRequest extends Request {
 export const oauthAuthentication = (options: OAuthValidationOptions = {}) => {
   const { requiredScopes = [], requireSSL = true } = options;
 
-  const { authlete, serviceId } = getAuthleteContext();
+  // const { authlete, serviceId } = getAuthleteContext();
 
   // RFC 6750 Section 3 (https://www.rfc-editor.org/rfc/rfc6750#page-7)
   // "The \"scope\" attribute is a space-delimited list of case-sensitive scope values
