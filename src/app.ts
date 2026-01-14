@@ -109,7 +109,7 @@ app.use('/api', ticketRoutes);
 // app.use('/oauth', oauthRoutes);
 
 // OAuth 2.0 Metadata Endpoints (RFC 8414)
-import { getAuthorizationServerMetadata } from './oauth/controllers/authorization-server-metadata.js';
+// import { getAuthorizationServerMetadata } from './oauth/controllers/authorization-server-metadata.js';
 import { getProtectedResourceMetadata } from './oauth/controllers/protected-resource-metadata.js';
 
 // OAuth 2.0 Authorization Server Metadata with CORS - allow all origins for metadata discovery
@@ -120,7 +120,7 @@ const metadataCorsOptions = {
   credentials: false  // Public metadata doesn't need credentials
 };
 
-app.get('/.well-known/oauth-authorization-server', cors(metadataCorsOptions), getAuthorizationServerMetadata);
+// app.get('/.well-known/oauth-authorization-server', cors(metadataCorsOptions), getAuthorizationServerMetadata);
 
 // OAuth 2.0 Protected Resource Metadata
 app.get('/.well-known/oauth-protected-resource', getProtectedResourceMetadata);
