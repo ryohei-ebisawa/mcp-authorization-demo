@@ -93,11 +93,11 @@ export class MockDatabaseConfig {
   static async initialize(): Promise<void> {
     // テスト用ユーザーを初期化
     const bcrypt = await import('bcryptjs');
-    const testUserPassword = await bcrypt.default.hash('testpass', 10);
+    const testUserPassword = await bcrypt.default.hash('inga', 10);
     
     users.push({
-      id: 1,
-      username: 'testuser',
+      id: 1004,
+      username: 'inga',
       password: testUserPassword,
       email: 'test@example.com',
       created_at: new Date()

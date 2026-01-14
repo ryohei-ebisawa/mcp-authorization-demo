@@ -9,7 +9,7 @@ export interface OAuthConfig {
 }
 
 export const getOAuthConfig = (): OAuthConfig => {
-  const port = process.env.HTTPS_PORT || '3443';
+  const port = process.env.HTTPS_PORT || '8787';
   const baseUrl = `https://localhost:${port}`;
 
   return {
