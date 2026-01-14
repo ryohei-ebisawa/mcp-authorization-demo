@@ -32,8 +32,8 @@ const app = express();
 
 
 // SSL証明書のパス
-const SSL_KEY_PATH = path.join(__dirname, '../ssl/localhost.key');
-const SSL_CERT_PATH = path.join(__dirname, '../ssl/localhost.crt');
+const SSL_KEY_PATH = path.join(__dirname, '../ssl/localhost-key.pem');
+const SSL_CERT_PATH = path.join(__dirname, '../ssl/localhost.pem');
 
 // SSL証明書の存在確認
 const checkSSLCertificates = (): boolean => {
