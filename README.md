@@ -9,6 +9,8 @@
 - [3. MCP 認可フロー](#3-mcp-認可フロー)
 - [4. 認可サーバーの主要なエンドポイント](#4-認可サーバーの主要なエンドポイント)
   - [4.1 認可サーバーメタデータエンドポイント](#41-認可サーバーメタデータエンドポイント)
+    - [パスコンポーネントが必要な場合](#パスコンポーネントが必要な場合)
+  - [パスコンポーネントが不要な場合](#パスコンポーネントが不要な場合)
   - [4.2 動的クライアント登録エンドポイント](#42-動的クライアント登録エンドポイント)
   - [4.3 認可エンドポイント](#43-認可エンドポイント)
   - [4.4 トークンエンドポイント](#44-トークンエンドポイント)
@@ -120,8 +122,22 @@ sequenceDiagram
 
 ### 4.1 認可サーバーメタデータエンドポイント
 
-認可サーバーの設定情報を JSON 形式で公開するエンドポイントです。通常 `/.well-known/oauth-authorization-server` や `/.well-known/openid-configuration` というパスで提供されます。
-クライアントはこの情報を取得することで、認可サーバーがサポートしている機能（スコープ、グラントタイプ、署名アルゴリズムなど）や、他の各エンドポイントの URL を動的に知ることができます。
+認可サーバーの設定情報（メタデータ）をJSON形式で公開するエンドポイントです。
+[RFC8414](https://datatracker.ietf.org/doc/html/rfc8414)（OAuth 2.0 Authorization Server Metadata）および、[OpenID Connect Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0.html)で仕様が定義されています。
+メタデータは`/.well-known/oauth-authorization-server` や `/.well-known/openid-configuration` というWell-Known URIを利用して公開されます。
+
+MCPクライアントは、以下の順にリクエストを行いメタデータが取得できるか試みます。
+
+#### パスコンポーネントが必要な場合
+
+1. OAuth 2.0 Authorization Server Metadata with path: `https://example.com/.well-known/oauth-authorization-server/path`
+2. OpenID Connect Discovery 1.0 with path: `https://example.com/.well-known/openid-configuration/path`
+3. OpenID Connect Discovery 1.0 with path: `https://example.com/path/.well-known/openid-configuration`
+
+### パスコンポーネントが不要な場合
+
+1. OAuth 2.0 Authorization Server Metadata: `https://example.com/.well-known/oauth-authorization-server`
+2. OpenID Connect Discovery 1.0: `https://example.com/.well-known/openid-configuration`
 
 ### 4.2 動的クライアント登録エンドポイント
 
