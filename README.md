@@ -4,7 +4,6 @@
 
 ## 目次
 
-- [目次](#目次)
 - [1. プロジェクト概要](#1-プロジェクト概要)
 - [2. ローカル環境構築](#2-ローカル環境構築)
 - [3. MCP 認可フロー](#3-mcp-認可フロー)
@@ -14,6 +13,14 @@
   - [4.3 認可エンドポイント](#43-認可エンドポイント)
   - [4.4 トークンエンドポイント](#44-トークンエンドポイント)
   - [4.5 イントロスペクションエンドポイント](#45-イントロスペクションエンドポイント)
+- [5. 各エンドポイントの動作確認](#5-各エンドポイントの動作確認)
+  - [5.1 事前準備](#51-事前準備)
+  - [5.2 各エンドポイントの確認手順](#52-各エンドポイントの確認手順)
+- [6. Authleteコンソール上での各エンドポイントの設定](#6-authleteコンソール上での各エンドポイントの設定)
+  - [6.1. 動的クライアント登録エンドポイント](#61-動的クライアント登録エンドポイント)
+  - [6.2. 認可エンドポイント](#62-認可エンドポイント)
+  - [6.3. トークンエンドポイント](#63-トークンエンドポイント)
+  - [6.4. イントロスペクションエンドポイント](#64-イントロスペクションエンドポイント)
 - [Credits / Acknowledgments](#credits--acknowledgments)
 
 ## 1. プロジェクト概要
@@ -135,6 +142,53 @@ OAuth クライアント（アプリケーション）が、自身のメタデ�
 
 リソースサーバー（MCP サーバー）が、提示されたアクセストークンの有効性やメタデータを確認するために使用するエンドポイントです。
 MCP サーバーはこのエンドポイントからの応答に含まれる `authorization_details` を確認し、MCP ツールの実行が許可されているか、またユーザーが設定した制約（例：購入枚数制限）内であるかを判断して、ツールの実行制御を行います。
+
+## 5. 各エンドポイントの動作確認
+
+### 5.1 事前準備
+
+[ローカル環境構築手順](./docs/local-setup.md)を参考にローカルサーバーを起動してくだい。  
+
+### 5.2 各エンドポイントの確認手順
+
+1. MCP Inspectorの画面で「Open Auth Settings」をクリック。
+   ![5.2-1](./docs/images/readme/mcp-inspector-oauth1.png)
+2. Auth Settings画面上部の「Quick OAuth Flow」をクリック
+3. 認可画面が表示されたら認証情報を入力
+   ![5.2-2](./docs/images/readme/mcp-inspector-oauth2.png)
+4. MCP Inspectorの画面に戻ってきらた画面下部から各エンドポイントの実行結果が確認できます。
+   ![5.2-3](./docs/images/readme/mcp-inspector-oauth3.png)
+    <!-- > [!TIP]
+    > Auth Settings画面の下部にある「Continue」ボタンをクリックすることでフローをステップバイステップで実行できます。
+    > ![5.2-4](./docs/images/readme/mcp-inspector-oauth4.png) -->
+5. 「Authentication Complete」のアコーディオンを開いてアクセストークンを取得
+   ![5.2-5](./docs/images/readme/mcp-inspector-oauth5.png)
+6. 以下のコマンドを実行してIntrospectionエンドポイントにリクエスト
+    ```bash
+    curl -X POST https://<au3te-ts-hono_domain>/api/introspect \
+        -u "mcp-server:mcp-server-secret" \
+        -d "token=<access_token>"
+    
+    #  {"active":true,"scope": ...
+    ```
+
+## 6. Authleteコンソール上での各エンドポイントの設定
+
+### 6.1. 動的クライアント登録エンドポイント
+
+![console-dcr](./docs/images/readme/console-dcr.png)
+
+### 6.2. 認可エンドポイント
+
+![console-authorization](./docs/images/readme/console-authorization.png)
+
+### 6.3. トークンエンドポイント
+
+![console-token](./docs/images/readme/console-token.png)
+
+### 6.4. イントロスペクションエンドポイント
+
+![console-introspection](./docs/images/readme/console-introspection.png)
 
 ## Credits / Acknowledgments
 

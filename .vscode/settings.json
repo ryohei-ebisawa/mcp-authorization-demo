@@ -1,0 +1,10 @@
+{
+    "markdown.extension.toc.omittedFromToc": {
+        "README.md": [
+            "## 目次",
+        ],
+        "docs/local-setup.md": [
+            "## 目次",
+        ]
+    }
+}
