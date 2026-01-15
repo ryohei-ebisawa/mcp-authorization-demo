@@ -130,9 +130,9 @@ MCPクライアントは、以下の順にリクエストを行いメタデー�
 
 #### パスコンポーネントが必要な場合
 
-1. OAuth 2.0 Authorization Server Metadata with path: `https://example.com/.well-known/oauth-authorization-server/path`
-2. OpenID Connect Discovery 1.0 with path: `https://example.com/.well-known/openid-configuration/path`
-3. OpenID Connect Discovery 1.0 with path: `https://example.com/path/.well-known/openid-configuration`
+1. OAuth 2.0 Authorization Server Metadata with path: `https://example.com/.well-known/oauth-authorization-server/**path**`
+2. OpenID Connect Discovery 1.0 with path: `https://example.com/.well-known/openid-configuration/**path**`
+3. OpenID Connect Discovery 1.0 with path: `https://example.com/**path**/.well-known/openid-configuration`
 
 ### パスコンポーネントが不要な場合
 
