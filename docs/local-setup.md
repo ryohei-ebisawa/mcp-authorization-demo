@@ -63,7 +63,8 @@ sh ./scripts/ssl-setup.sh
 
 ## 3. ローカルサーバーの起動
 
-以下のスクリプトを実行して、アプリケーションを起動します。
+以下のスクリプトを実行して、アプリケーションを起動します。  
+MCP Inspectorが自動的に立ち上がります。
 
 ```bash
 sh ./scripts/launch-local-server.sh
