@@ -19,6 +19,8 @@
 
 ### mkcertのインストール
 
+ローカルで信頼されたSSL証明書を利用するために `mkcert` を使用します。
+
 #### Homebrewを使用したインストール
 
 ```bash
@@ -43,8 +45,8 @@ mkcert -CAROOT
 ### リポジトリのクローン
 
 ```bash
-git clone https://github.com/ryohei-ebisawa/authlete-study-session-2025-08.git
-cd authlete-study-session-2025-08
+git clone https://github.com/ryohei-ebisawa/mcp-authorization-demo.git
+cd mcp-authorization-demo
 ```
 
 ### 依存パッケージのインストール
