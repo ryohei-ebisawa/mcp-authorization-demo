@@ -35,13 +35,15 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
 
 ## 2. ローカル環境構築
 
-[こちら](./docs/local-setup.md)を参照して下さい。
+> [!IMPORTANT]
+> 環境構築の詳細手順は [こちら](./docs/local-setup.md) を参照して下さい。
 
 ## 3. 各エンドポイントの動作確認
 
 ### 3.1 事前準備
 
-[ローカル環境構築手順](./docs/local-setup.md)を参考にローカルサーバーを起動してください。
+> [!NOTE]
+> [ローカル環境構築手順](./docs/local-setup.md)を参考にローカルサーバーを起動してください。
 
 ### 3.2 確認手順
 
@@ -52,9 +54,11 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
 3. 認可画面が表示されたら認証情報を入力
 4. MCP Inspectorの画面に戻ってきたら画面下部から各エンドポイントの実行結果が確認できます。
    ![3.2-3](./docs/images/readme/mcp-inspector-oauth3.png)
-    <!-- > [!TIP]
-    > Auth Settings画面の下部にある「Continue」ボタンをクリックすることでフローをステップバイステップで実行できます。
-    > ![5.2-4](./docs/images/readme/mcp-inspector-oauth4.png) -->
+
+> [!TIP]
+> Auth Settings画面の下部にある「Continue」ボタンをクリックすることでフローをステップバイステップで実行できます。
+> ![5.2-4](./docs/images/readme/mcp-inspector-oauth4.png)
+
 5. 「Authentication Complete」のアコーディオンを開いてアクセストークンを取得
    ![3.2-5](./docs/images/readme/mcp-inspector-oauth5.png)
 6. 以下のコマンドを実行してIntrospectionエンドポイントにリクエスト
