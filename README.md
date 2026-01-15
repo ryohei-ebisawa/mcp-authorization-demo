@@ -1,7 +1,8 @@
 # MCP認可デモ
 
-このプロジェクトは、MCP認可のデモを行うためのサンプルプロジェクトです。  
-<!-- TODO: 概要情報をもうちょっと何か書く -->
+このプロジェクトは、MCP認可のデモを行うためのサンプルプロジェクトです。
+OAuth 2.0 / 2.1 に基づく認可フローを利用し、MCP クライアントが MCP サーバー（リソースサーバー）上の保護されたリソースに安全にアクセスする仕組みを実証します。
+Authlete をバックエンドに利用した認可サーバーと連携し、詳細な認可制御（Rich Authorization Requests）や動的クライアント登録（Dynamic Client Registration）の動作を確認できます。
 
 ## 目次
 
@@ -14,7 +15,7 @@
 - [5. 認可サーバーの主要なエンドポイント](#5-認可サーバーの主要なエンドポイント)
   - [5.1 認可サーバーメタデータエンドポイント](#51-認可サーバーメタデータエンドポイント)
     - [パスコンポーネントが必要な場合](#パスコンポーネントが必要な場合)
-  - [パスコンポーネントが不要な場合](#パスコンポーネントが不要な場合)
+    - [パスコンポーネントが不要な場合](#パスコンポーネントが不要な場合)
   - [5.2 動的クライアント登録エンドポイント](#52-動的クライアント登録エンドポイント)
   - [5.3 認可エンドポイント](#53-認可エンドポイント)
   - [5.4 トークンエンドポイント](#54-トークンエンドポイント)
@@ -40,7 +41,7 @@
 
 ### 3.1 事前準備
 
-[ローカル環境構築手順](./docs/local-setup.md)を参考にローカルサーバーを起動してくだい。  
+[ローカル環境構築手順](./docs/local-setup.md)を参考にローカルサーバーを起動してください。
 
 ### 3.2 確認手順
 
@@ -49,7 +50,7 @@
 2. Auth Settings画面上部の「Quick OAuth Flow」をクリック
    ![3.2-2](./docs/images/readme/mcp-inspector-oauth2.png)
 3. 認可画面が表示されたら認証情報を入力
-4. MCP Inspectorの画面に戻ってきらた画面下部から各エンドポイントの実行結果が確認できます。
+4. MCP Inspectorの画面に戻ってきたら画面下部から各エンドポイントの実行結果が確認できます。
    ![3.2-3](./docs/images/readme/mcp-inspector-oauth3.png)
     <!-- > [!TIP]
     > Auth Settings画面の下部にある「Continue」ボタンをクリックすることでフローをステップバイステップで実行できます。
@@ -161,10 +162,10 @@ MCPクライアントは、以下の順にリクエストを行いメタデー�
 #### パスコンポーネントが必要な場合
 
 1. OAuth 2.0 Authorization Server Metadata with path insertion: `https://example.com/.well-known/oauth-authorization-server/**path**`
-2. OpenID Connect Discovery 1.0 with pathi nsertion: `https://example.com/.well-known/openid-configuration/**path**`
+2. OpenID Connect Discovery 1.0 with path insertion: `https://example.com/.well-known/openid-configuration/**path**`
 3. OpenID Connect Discovery 1.0 with path appending: `https://example.com/**path**/.well-known/openid-configuration`
 
-### パスコンポーネントが不要な場合
+#### パスコンポーネントが不要な場合
 
 1. OAuth 2.0 Authorization Server Metadata: `https://example.com/.well-known/oauth-authorization-server`
 2. OpenID Connect Discovery 1.0: `https://example.com/.well-known/openid-configuration`
@@ -185,7 +186,7 @@ OAuth クライアント（アプリケーション）が、自身のメタデ�
 ### 5.4 トークンエンドポイント
 
 クライアントがアクセストークンを取得するために使用するエンドポイントです。サーバー間通信（バックチャネル）で利用されます。
-認可コードフローでは、認可エンドポイントで取得した「認可コード」をこのエンドポイントに送信し、引き換えに「アクセストークン」（および ID トークン、リフレッシュトークン）を受け取ります。また、リクエスト時には`resource` パラメータで使用する MCP サーバーを特定する必要があります。（`resorce`パラメータの値は認可エンドポイントにリクエストする際と同じです。）
+認可コードフローでは、認可エンドポイントで取得した「認可コード」をこのエンドポイントに送信し、引き換えに「アクセストークン」（および ID トークン、リフレッシュトークン）を受け取ります。また、リクエスト時には`resource` パラメータで使用する MCP サーバーを特定する必要があります。（`resource`パラメータの値は認可エンドポイントにリクエストする際と同じです。）
 
 ### 5.5 イントロスペクションエンドポイント
 
