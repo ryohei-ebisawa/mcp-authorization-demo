@@ -87,7 +87,7 @@ export const oauthAuthentication = (options: OAuthValidationOptions = {}) => {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic cnMwOnJzMC1zZWNyZXQ=`,
+          Authorization: `Basic bWNwLXNlcnZlcjptY3Atc2VydmVyLXNlY3JldA==`,
         },
         body: formData.toString(),
       });
@@ -178,6 +178,7 @@ export const oauthAuthentication = (options: OAuthValidationOptions = {}) => {
             iss: string;
             auth_time: number;
           };
+          console.log("introspectionResponse :>> ", introspectionResponse);
           if (
             !introspectionResponse.aud ||
             !introspectionResponse.aud.includes(mcpServerUrl)
