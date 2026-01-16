@@ -9,8 +9,7 @@ export interface OAuthConfig {
 }
 
 export const getOAuthConfig = (): OAuthConfig => {
-  const port = process.env.HTTPS_PORT || '8787';
-  const baseUrl = process.env.ISSUER_URL || `https://localhost:${port}`;
+  const baseUrl = "https://vc-issuer.g-trustedweb.workers.dev";
 
   return {
     issuer: baseUrl,
