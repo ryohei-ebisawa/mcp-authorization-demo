@@ -50,15 +50,13 @@ sh ./scripts/launch-local-server.sh
 
 1. Authorizationヘッダーを用いずにMCPサーバーにリクエストする。
 
-リクエスト例：
-
 ```bash
+# リクエスト
 curl -iX POST http://localhost:3443/mcp
 ```
 
-レスポンス例：
-
 ```bash
+# レスポンス
 HTTP/1.1 401 Unauthorized
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Resource-Policy: same-origin
@@ -84,15 +82,15 @@ Keep-Alive: timeout=5
 {"error":"invalid_request","error_description":"Access token is required"}
 ```
 
-2. `WWW-Authenticate`ヘッダーの`resource_metadata`に記載されているURLにリクエストする。
+1. `WWW-Authenticate`ヘッダーの`resource_metadata`に記載されているURLにリクエストする。
 
 ```bash
+# リクエスト
 curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp
 ```
 
-レスポンス例：
-
 ```bash
+# レスポンス
 HTTP/1.1 200 OK
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Resource-Policy: same-origin
@@ -121,13 +119,13 @@ Keep-Alive: timeout=5
 
 3. レスポンスボディの`authorization_servers`から利用できる認可サーバーのURLを確認し、認可サーバーのメタデータをリクエストする。
 
-リクエスト例：
 ```bash
+# リクエスト
 curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorization-server
 ```
 
-レスポンス例（レスポンスボディは長いため中略）：
 ```bash
+# レスポンス（レスポンスボディは長いため中略）
 HTTP/2 200 
 date: Fri, 16 Jan 2026 06:39:35 GMT
 content-type: application/json;charset=utf-8
@@ -171,10 +169,10 @@ alt-svc: h3=":443"; ma=86400
 }
 ```
 
-4. 認可サーバーのメタデータから`registration_endpoint`のURLを取得し、クライアントの登録をリクエスト
+4. 認可サーバーのメタデータから`registration_endpoint`のURLを取得し、クライアントの登録をリクエストする。
 
-リクエスト例：
 ```bash
+# リクエスト
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/connect/register \
     -H "Content-Type: application/json" \
     -d '{
@@ -188,9 +186,8 @@ curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/connect/register \
         }'
 ```
 
-レスポンス例：
-
 ```bash
+# レスポンス
 HTTP/2 201 
 date: Fri, 16 Jan 2026 06:47:19 GMT
 content-type: application/json;charset=utf-8
@@ -209,35 +206,33 @@ alt-svc: h3=":443"; ma=86400
 {"default_max_age":0,"client_id":"1687054126","backchannel_user_code_parameter":false,"client_id_issued_at":1768546039,"tls_client_certificate_bound_access_tokens":false,"id_token_signed_response_alg":"RS256","redirect_uris":["http://localhost:6274/oauth/callback/debug"],"require_signed_request_object":false,"response_types":["code"],"client_uri":"https://github.com/modelcontextprotocol/inspector","registration_client_uri":"https://vc-issuer.g-trustedweb.workers.dev/connect/register/1687054126","registration_access_token":"msVNZHIuRTX8MW7Y03O1usW0TqK70-M1l6whFy6cUeM","token_endpoint_auth_method":"none","use_mtls_endpoint_aliases":false,"require_pushed_authorization_requests":false,"scope":"mcp:tickets:read mcp:tickets:write","client_name":"MCP Inspector","grant_types":["authorization_code","refresh_token"],"subject_type":"public","response_modes":["query","fragment","form_post","jwt","query.jwt","fragment.jwt","form_post.jwt"],"client_secret_expires_at":0}
 ```
 
-5. 作成されたクライアントの`client_id`を使用してブラウザで認可リクエストを行います。
+5. 作成されたクライアントの`client_id`を使用してブラウザで認可リクエストする。（`client_id`は適宜書き換える。）
 
-リクエストURL例：
-```url
+```bash
+# リクエストURL
+
 https://vc-issuer.g-trustedweb.workers.dev/api/authorization?response_type=code&client_id=1687054126&code_challenge=Skniu4mLy-GJhZzvSmLQpxDLGa_eSwW_cayjPqYSAaw&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&state=90a927408e0065c96358550992ed9ddee5fd796abef051060617560da32ab6a4&scope=mcp%3Atickets%3Aread+mcp%3Atickets%3Awrite&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp
 ```
 
-コールバックURL例：
-
-```url
+```bash
+# コールバックURL
 http://localhost:6274/oauth/callback/debug?state=90a927408e0065c96358550992ed9ddee5fd796abef051060617560da32ab6a4&code=MggNs47bcav_X55Ck8yBjLJ5RQqaLDAWMrRG_e0F4uI&iss=https%3A%2F%2Fvc-issuer.g-trustedweb.workers.dev
 ```
 
 認可リクエストに成功すると上記のようなURLにリダイレクトし、クエリパラメータから認可コードが取得できます。
 
-6. 取得した認可コードを用いてトークンリクエストを実行します。（トークンエンドポイントのURLは手順３の認可サーバーのメタデータから取得します）
-
-リクエスト例：
+6. 取得した認可コードを用いてトークンリクエストをする。（`client_id`は適宜書き換える。）
 
 ```bash
+# リクエスト
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "grant_type=authorization_code&code=MggNs47bcav_X55Ck8yBjLJ5RQqaLDAWMrRG_e0F4uI&code_verifier=bgQH5h5Aizcmvw98iJUVeiXhkzKa_oz8nJ8Y_JodWXM&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp&client_id=1687054126"
 
 ```
 
-レスポンス例：
-
 ```bash
+# レスポンス
 HTTP/2 200 
 date: Fri, 16 Jan 2026 07:01:05 GMT
 content-type: application/json;charset=utf-8
@@ -256,18 +251,18 @@ alt-svc: h3=":443"; ma=86400
 {"access_token":"IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU","token_type":"Bearer","expires_in":86400,"scope":"mcp:tickets:read mcp:tickets:write","refresh_token":"quiRRKL1NWotRSJOYpegKPZQn5_G6NezhRFIJKGcrJs"}
 ```
 
-7. 発行されたアクセストークンをAuthoriztionヘッダーに設定してMCPサーバーにリクエストします。
+1. 発行されたアクセストークンをAuthoriztionヘッダーに設定してMCPサーバーにリクエストする。
 
 リクエスト例：
 
 ```bash
+# リクエスト
 curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp \
     -H "Authorization: Bearear IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU"
 ```
 
-レスポンス例：
-
 ```bash
+# レスポンス
 HTTP/1.1 200 OK
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Resource-Policy: same-origin
