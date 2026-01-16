@@ -6,12 +6,11 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
 
 ## 目次
 
-- [目次](#目次)
 - [1. システム構成](#1-システム構成)
 - [2. ローカル環境構築](#2-ローカル環境構築)
-- [3. 各エンドポイントの動作確認](#3-各エンドポイントの動作確認)
+- [3. MCP 認可フローの動作確認](#3-mcp-認可フローの動作確認)
   - [3.1 ローカルサーバーの起動](#31-ローカルサーバーの起動)
-  - [3.2 確認手順](#32-確認手順)
+  - [3.2 curlコマンドを使用した動作確認手順](#32-curlコマンドを使用した動作確認手順)
 - [4. MCP 認可フロー](#4-mcp-認可フロー)
 - [5. 認可サーバーの主要なエンドポイント](#5-認可サーバーの主要なエンドポイント)
   - [5.1 認可サーバーメタデータエンドポイント](#51-認可サーバーメタデータエンドポイント)
@@ -39,50 +38,263 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
 > [!IMPORTANT]
 > 環境構築の詳細手順は [こちら](./docs/local-setup.md) を参照して下さい。
 
-## 3. 各エンドポイントの動作確認
+## 3. MCP 認可フローの動作確認
 
 ### 3.1 ローカルサーバーの起動
 
 ```bash
 sh ./scripts/launch-local-server.sh
 ```
-Terminalに下記のようなログが出力されていると思います。このSession Tokenはあとで使います。MCP Inspectorを起動してください
-```sh
-...
-[INSPECT] ⚙️ Proxy server listening on 127.0.0.1:6277
-[INSPECT] 🔑 Session token: ccc4afe2ed60d257edcd2d2c9dc6f757194506a7ca24044f8403569c52a38361
-...
-[INSPECT] 🔍 MCP Inspector is up and running at http://127.0.0.1:6274 🚀
+
+### 3.2 curlコマンドを使用した動作確認手順
+
+1. Authorizationヘッダーを用いずにMCPサーバーにリクエストする。
+
+リクエスト例：
+
+```bash
+curl -iX POST http://localhost:3443/mcp
 ```
 
-### 3.2 確認手順
+レスポンス例：
 
-1. 画面左のTransport Typeのプルダウンから`Streamble HTTP`を選択。
-   ![3.2-1](./docs/images/readme/mcp-inspector-oauth1.png)
-2. 画面左に表示されているURLが`https://localhost:3443/mcp`となっていることを確認（違う場合は変更）
-   ![3.2-2](./docs/images/readme/mcp-inspector-oauth2.png)
-3. MCP Inspectorの画面で「Open Auth Settings」をクリック。
-   ![3.2-3](./docs/images/readme/mcp-inspector-oauth3.png)
-4. Auth Settings画面上部の「Quick OAuth Flow」をクリック
-   ![3.2-4](./docs/images/readme/mcp-inspector-oauth4.png)
-5. 認可画面が表示されたら認証情報を入力
-6. MCP Inspectorの画面に戻ってきたら画面下部から各エンドポイントの実行結果が確認できます。
-   ![3.2-5](./docs/images/readme/mcp-inspector-oauth5.png)
+```bash
+HTTP/1.1 401 Unauthorized
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Origin-Agent-Cluster: ?1
+Referrer-Policy: no-referrer
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 0
+Vary: Origin
+Access-Control-Allow-Credentials: true
+WWW-Authenticate: Bearer realm="http://localhost:3443", error="invalid_request", error_description="Access token is required", resource_metadata="http://localhost:3443/.well-known/oauth-protected-resource/mcp", scope="mcp:tickets:read"
+Content-Type: application/json; charset=utf-8
+Content-Length: 74
+ETag: W/"4a-chtfV9P482M7qfx9ctf/dIuif+o"
+Date: Fri, 16 Jan 2026 06:20:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
 
-> [!TIP]
-> Auth Settings画面の下部にある「Continue」ボタンをクリックすることでフローをステップバイステップで実行できます。
-> ![5.2-6](./docs/images/readme/mcp-inspector-oauth6.png)
+{"error":"invalid_request","error_description":"Access token is required"}
+```
 
-7. 「Authentication Complete」のアコーディオンを開いてアクセストークンを取得
-   ![3.2-7](./docs/images/readme/mcp-inspector-oauth7.png)
-8. 以下のコマンドを実行してIntrospectionエンドポイントにリクエスト
-    ```bash
-    curl -X POST https://<au3te-ts-hono_domain>/api/introspect \
-        -u "mcp-server:mcp-server-secret" \
-        -d "token=<access_token>"
+2. `WWW-Authenticate`ヘッダーの`resource_metadata`に記載されているURLにリクエストする。
 
-    #  {"active":true,"scope": ...
-    ```
+```bash
+curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp
+```
+
+レスポンス例：
+
+```bash
+HTTP/1.1 200 OK
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Origin-Agent-Cluster: ?1
+Referrer-Policy: no-referrer
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 0
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Type: application/json; charset=utf-8
+Cache-Control: public, max-age=3600
+Access-Control-Allow-Origin: *
+Content-Length: 387
+ETag: W/"183-l7a4e8G0p2xK/Od2f+n4aM3za8c"
+Date: Fri, 16 Jan 2026 06:27:20 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"resource":"http://localhost:3443/mcp","authorization_servers":["https://vc-issuer.g-trustedweb.workers.dev"],"scopes_supported":["mcp:tickets:read","mcp:tickets:write"],"bearer_methods_supported":["header"],"resource_documentation":"http://localhost:3443/docs/mcp","resource_policy_uri":"http://localhost:3443/policy/mcp","authorization_details_types_supported":["ticket-reservation"]}
+```
+
+3. レスポンスボディの`authorization_servers`から利用できる認可サーバーのURLを確認し、認可サーバーのメタデータをリクエストする。
+
+リクエスト例：
+```bash
+curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorization-server
+```
+
+レスポンス例（レスポンスボディは長いため中略）：
+```bash
+HTTP/2 200 
+date: Fri, 16 Jan 2026 06:39:35 GMT
+content-type: application/json;charset=utf-8
+content-length: 8013
+access-control-allow-origin: *
+cache-control: no-store
+set-cookie: __session=cec0ad80-056c-4f7f-8c1f-8f92b524b021; Max-Age=86400; Path=/; HttpOnly; Secure; SameSite=Lax
+pragma: no-cache
+vary: accept-encoding
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=Q7Xf5l%2BgmDJrNP%2BpH4s5tv3GuBaoF13JfWTzrgr6X4qcns1vYyImLYnz%2FrYYl8uXhD4GYzfd5YNrq%2BF5Q5%2BprYD2WbWv8cUjtzabLSnxN6KDIs2MAKZkDPTkc0%2BOf%2FFvNEc%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: 9beb9dd09814fcaf-KIX
+alt-svc: h3=":443"; ma=86400
+
+{
+  "issuer": "https://vc-issuer.g-trustedweb.workers.dev",
+  "authorization_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/api/authorization",
+  "token_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/api/token",
+  "registration_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/connect/register",
+  "scopes_supported": [
+    "address",
+    "email",
+    "openid",
+    "offline_access",
+    "phone",
+    "profile",
+    "grant_management_query",
+    "grant_management_revoke",
+    "org.iso.18013.5.1.mDL",
+    "test",
+    "mcp:tickets:read",
+    "mcp:tickets:write"
+  ],
+  "response_types_supported": [
+    "none",
+    "code",
+    "id_token",
+    "code id_token"
+  ],
+}
+```
+
+4. 認可サーバーのメタデータから`registration_endpoint`のURLを取得し、クライアントの登録をリクエスト
+
+リクエスト例：
+```bash
+curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/connect/register \
+    -H "Content-Type: application/json" \
+    -d '{
+            "redirect_uris": ["http://localhost:6274/oauth/callback/debug"],
+            "token_endpoint_auth_method": "none",
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+            "client_name": "MCP Inspector",
+            "client_uri": "https://github.com/modelcontextprotocol/inspector",
+            "scope": "mcp:tickets:read mcp:tickets:write"
+        }'
+```
+
+レスポンス例：
+
+```bash
+HTTP/2 201 
+date: Fri, 16 Jan 2026 06:47:19 GMT
+content-type: application/json;charset=utf-8
+content-length: 970
+access-control-allow-origin: *
+cache-control: no-store
+set-cookie: __session=e2aef599-695d-47e3-93f0-9b314bfdfa1e; Max-Age=86400; Path=/; HttpOnly; Secure; SameSite=Lax
+pragma: no-cache
+vary: accept-encoding
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=uOnjKyrrMG0IlmMlxXk1bkLqtdB9TUSrt7OB5UjIWSBSrGAxV5iI4950nFIOa6ZK6hS3o5INzx1fnT2RHw1eVCD1OqGdW%2BELwESSSCfswmsEASrGY0es8enSylNJhHUjkis%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: 9beba9230c40d3cd-KIX
+alt-svc: h3=":443"; ma=86400
+
+{"default_max_age":0,"client_id":"1687054126","backchannel_user_code_parameter":false,"client_id_issued_at":1768546039,"tls_client_certificate_bound_access_tokens":false,"id_token_signed_response_alg":"RS256","redirect_uris":["http://localhost:6274/oauth/callback/debug"],"require_signed_request_object":false,"response_types":["code"],"client_uri":"https://github.com/modelcontextprotocol/inspector","registration_client_uri":"https://vc-issuer.g-trustedweb.workers.dev/connect/register/1687054126","registration_access_token":"msVNZHIuRTX8MW7Y03O1usW0TqK70-M1l6whFy6cUeM","token_endpoint_auth_method":"none","use_mtls_endpoint_aliases":false,"require_pushed_authorization_requests":false,"scope":"mcp:tickets:read mcp:tickets:write","client_name":"MCP Inspector","grant_types":["authorization_code","refresh_token"],"subject_type":"public","response_modes":["query","fragment","form_post","jwt","query.jwt","fragment.jwt","form_post.jwt"],"client_secret_expires_at":0}
+```
+
+5. 作成されたクライアントの`client_id`を使用してブラウザで認可リクエストを行います。
+
+リクエストURL例：
+```url
+https://vc-issuer.g-trustedweb.workers.dev/api/authorization?response_type=code&client_id=1687054126&code_challenge=Skniu4mLy-GJhZzvSmLQpxDLGa_eSwW_cayjPqYSAaw&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&state=90a927408e0065c96358550992ed9ddee5fd796abef051060617560da32ab6a4&scope=mcp%3Atickets%3Aread+mcp%3Atickets%3Awrite&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp
+```
+
+コールバックURL例：
+
+```url
+http://localhost:6274/oauth/callback/debug?state=90a927408e0065c96358550992ed9ddee5fd796abef051060617560da32ab6a4&code=MggNs47bcav_X55Ck8yBjLJ5RQqaLDAWMrRG_e0F4uI&iss=https%3A%2F%2Fvc-issuer.g-trustedweb.workers.dev
+```
+
+認可リクエストに成功すると上記のようなURLにリダイレクトし、クエリパラメータから認可コードが取得できます。
+
+6. 取得した認可コードを用いてトークンリクエストを実行します。（トークンエンドポイントのURLは手順３の認可サーバーのメタデータから取得します）
+
+リクエスト例：
+
+```bash
+curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/token \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "grant_type=authorization_code&code=MggNs47bcav_X55Ck8yBjLJ5RQqaLDAWMrRG_e0F4uI&code_verifier=bgQH5h5Aizcmvw98iJUVeiXhkzKa_oz8nJ8Y_JodWXM&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp&client_id=1687054126"
+
+```
+
+レスポンス例：
+
+```bash
+HTTP/2 200 
+date: Fri, 16 Jan 2026 07:01:05 GMT
+content-type: application/json;charset=utf-8
+content-length: 210
+access-control-allow-origin: *
+cache-control: no-store
+set-cookie: __session=d2f9786f-cbc0-4f69-bd6d-da8b28228204; Max-Age=86400; Path=/; HttpOnly; Secure; SameSite=Lax
+pragma: no-cache
+vary: accept-encoding
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=EBu9p99GPt9eL8be9mgUMU6lpgucmkRf0T2QK9WaRR54iOU2ifqaSvBMFRBf5ij5DfdUXpHL8nIDUpV1s7%2B%2Bhkw8t1lIi3YaezZDPOC%2FEnTmngjSp86LpFojaV8oM0U4j7s%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: 9bebbd574f5b8382-KIX
+alt-svc: h3=":443"; ma=86400
+
+{"access_token":"IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU","token_type":"Bearer","expires_in":86400,"scope":"mcp:tickets:read mcp:tickets:write","refresh_token":"quiRRKL1NWotRSJOYpegKPZQn5_G6NezhRFIJKGcrJs"}
+```
+
+7. 発行されたアクセストークンをAuthoriztionヘッダーに設定してMCPサーバーにリクエストします。
+
+リクエスト例：
+
+```bash
+curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp \
+    -H "Authorization: Bearear IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU"
+```
+
+レスポンス例：
+
+```bash
+HTTP/1.1 200 OK
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Origin-Agent-Cluster: ?1
+Referrer-Policy: no-referrer
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 0
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Type: application/json; charset=utf-8
+Cache-Control: public, max-age=3600
+Access-Control-Allow-Origin: *
+Content-Length: 387
+ETag: W/"183-l7a4e8G0p2xK/Od2f+n4aM3za8c"
+Date: Fri, 16 Jan 2026 07:03:02 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"resource":"http://localhost:3443/mcp","authorization_servers":["https://vc-issuer.g-trustedweb.workers.dev"],"scopes_supported":["mcp:tickets:read","mcp:tickets:write"],"bearer_methods_supported":["header"],"resource_documentation":"http://localhost:3443/docs/mcp","resource_policy_uri":"http://localhost:3443/policy/mcp","authorization_details_types_supported":["ticket-reservation"]}
+```
+
+無事MCPサーバーにアクセスできました。
 
 ## 4. MCP 認可フロー
 
