@@ -6,6 +6,7 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
 
 ## 目次
 
+- [目次](#目次)
 - [1. システム構成](#1-システム構成)
 - [2. ローカル環境構築](#2-ローカル環境構築)
 - [3. 各エンドポイントの動作確認](#3-各エンドポイントの動作確認)
@@ -56,21 +57,25 @@ Terminalに下記のようなログが出力されていると思います。こ
 
 ### 3.2 確認手順
 
-1. MCP Inspectorの画面で「Open Auth Settings」をクリック。
+1. 画面左のTransport Typeのプルダウンから`Streamble HTTP`を選択。
    ![3.2-1](./docs/images/readme/mcp-inspector-oauth1.png)
-2. Auth Settings画面上部の「Quick OAuth Flow」をクリック
+2. 画面左に表示されているURLが`https://localhost:3443/mcp`となっていることを確認（違う場合は変更）
    ![3.2-2](./docs/images/readme/mcp-inspector-oauth2.png)
-3. 認可画面が表示されたら認証情報を入力
-4. MCP Inspectorの画面に戻ってきたら画面下部から各エンドポイントの実行結果が確認できます。
+3. MCP Inspectorの画面で「Open Auth Settings」をクリック。
    ![3.2-3](./docs/images/readme/mcp-inspector-oauth3.png)
+4. Auth Settings画面上部の「Quick OAuth Flow」をクリック
+   ![3.2-4](./docs/images/readme/mcp-inspector-oauth4.png)
+5. 認可画面が表示されたら認証情報を入力
+6. MCP Inspectorの画面に戻ってきたら画面下部から各エンドポイントの実行結果が確認できます。
+   ![3.2-5](./docs/images/readme/mcp-inspector-oauth5.png)
 
 > [!TIP]
 > Auth Settings画面の下部にある「Continue」ボタンをクリックすることでフローをステップバイステップで実行できます。
-> ![5.2-4](./docs/images/readme/mcp-inspector-oauth4.png)
+> ![5.2-6](./docs/images/readme/mcp-inspector-oauth6.png)
 
-5. 「Authentication Complete」のアコーディオンを開いてアクセストークンを取得
-   ![3.2-5](./docs/images/readme/mcp-inspector-oauth5.png)
-6. 以下のコマンドを実行してIntrospectionエンドポイントにリクエスト
+7. 「Authentication Complete」のアコーディオンを開いてアクセストークンを取得
+   ![3.2-7](./docs/images/readme/mcp-inspector-oauth7.png)
+8. 以下のコマンドを実行してIntrospectionエンドポイントにリクエスト
     ```bash
     curl -X POST https://<au3te-ts-hono_domain>/api/introspect \
         -u "mcp-server:mcp-server-secret" \
