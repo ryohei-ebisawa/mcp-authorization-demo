@@ -82,7 +82,7 @@ Keep-Alive: timeout=5
 {"error":"invalid_request","error_description":"Access token is required"}
 ```
 
-1. `WWW-Authenticate`ヘッダーの`resource_metadata`に記載されているURLにリクエストする。
+2. `WWW-Authenticate`ヘッダーの`resource_metadata`に記載されているURLにリクエストする。
 
 ```bash
 # リクエスト
@@ -251,7 +251,7 @@ alt-svc: h3=":443"; ma=86400
 {"access_token":"IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU","token_type":"Bearer","expires_in":86400,"scope":"mcp:tickets:read mcp:tickets:write","refresh_token":"quiRRKL1NWotRSJOYpegKPZQn5_G6NezhRFIJKGcrJs"}
 ```
 
-1. 発行されたアクセストークンをAuthoriztionヘッダーに設定してMCPサーバーにリクエストする。
+7. 発行されたアクセストークンをAuthoriztionヘッダーに設定してMCPサーバーにリクエストする。
 
 リクエスト例：
 
