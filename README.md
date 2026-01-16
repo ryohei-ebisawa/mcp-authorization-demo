@@ -45,6 +45,14 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
 ```bash
 sh ./scripts/launch-local-server.sh
 ```
+Terminalに下記のようなログが出力されていると思います。このSession Tokenはあとで使います。MCP Inspectorを起動してください
+```sh
+...
+[INSPECT] ⚙️ Proxy server listening on 127.0.0.1:6277
+[INSPECT] 🔑 Session token: ccc4afe2ed60d257edcd2d2c9dc6f757194506a7ca24044f8403569c52a38361
+...
+[INSPECT] 🔍 MCP Inspector is up and running at http://127.0.0.1:6274 🚀
+```
 
 ### 3.2 確認手順
 
@@ -67,7 +75,7 @@ sh ./scripts/launch-local-server.sh
     curl -X POST https://<au3te-ts-hono_domain>/api/introspect \
         -u "mcp-server:mcp-server-secret" \
         -d "token=<access_token>"
-    
+
     #  {"active":true,"scope": ...
     ```
 
@@ -96,7 +104,7 @@ sequenceDiagram
         Note over C,MS: MCP Protected Resource Metadata Discovery
         C->>MS: GET /.well-known/oauth-protected-resource/mcp
         MS-->>C: 200 {authorization_servers: [baseUrl], resource: "baseUrl/mcp",<br/>scopes_supported: ["mcp:tickets:read", "mcp:tickets:write"], ...}
-        
+
     end
 
     %% Authorization Server Metadata Discovery
