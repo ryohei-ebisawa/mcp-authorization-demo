@@ -52,7 +52,10 @@ sh ./scripts/launch-local-server.sh
 
 ```bash
 # リクエスト
-curl -iX POST http://localhost:3443/mcp
+curl -iX POST http://localhost:3443/mcp \
+    -H "Accept: application/json, text/event-stream" \
+    -H "Content-Type: application/json" \
+    -d '{"method":"notifications/initialized","jsonrpc":"2.0"}'
 ```
 
 ```bash
@@ -257,13 +260,16 @@ alt-svc: h3=":443"; ma=86400
 
 ```bash
 # リクエスト
-curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp \
-    -H "Authorization: Bearear IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU"
+curl -iX POST http://localhost:3443/mcp \
+    -H "Authorization: Bearer IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU" \
+    -H "Accept: application/json, text/event-stream" \
+    -H "Content-Type: application/json" \
+    -d '{"method":"notifications/initialized","jsonrpc":"2.0"}'
 ```
 
 ```bash
 # レスポンス
-HTTP/1.1 200 OK
+HTTP/1.1 202 Accepted
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Resource-Policy: same-origin
 Origin-Agent-Cluster: ?1
@@ -277,16 +283,11 @@ X-Permitted-Cross-Domain-Policies: none
 X-XSS-Protection: 0
 Vary: Origin
 Access-Control-Allow-Credentials: true
-Content-Type: application/json; charset=utf-8
-Cache-Control: public, max-age=3600
-Access-Control-Allow-Origin: *
-Content-Length: 387
-ETag: W/"183-l7a4e8G0p2xK/Od2f+n4aM3za8c"
-Date: Fri, 16 Jan 2026 07:03:02 GMT
+content-type: text/plain; charset=UTF-8
+Date: Fri, 16 Jan 2026 07:26:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=5
-
-{"resource":"http://localhost:3443/mcp","authorization_servers":["https://vc-issuer.g-trustedweb.workers.dev"],"scopes_supported":["mcp:tickets:read","mcp:tickets:write"],"bearer_methods_supported":["header"],"resource_documentation":"http://localhost:3443/docs/mcp","resource_policy_uri":"http://localhost:3443/policy/mcp","authorization_details_types_supported":["ticket-reservation"]}
+Transfer-Encoding: chunked
 ```
 
 無事MCPサーバーにアクセスできました。
