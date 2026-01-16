@@ -14,4 +14,4 @@ npx concurrently \
   --names "APP,INSPECT" \
   --prefix-colors "cyan,magenta" \
   "npm run dev" \
-  "npx @modelcontextprotocol/inspector https://localhost:3443/mcp"
+  "npx @modelcontextprotocol/inspector http://localhost:3443/mcp"

@@ -44,12 +44,12 @@ export const oauthAuthentication = (options: OAuthValidationOptions = {}) => {
   ) => {
     try {
       // HTTPS必須チェック
-      if (requireSSL && req.protocol !== "https") {
-        return res.status(400).json({
-          error: "invalid_request",
-          error_description: "HTTPS is required for OAuth protected resources",
-        });
-      }
+      // if (requireSSL && req.protocol !== "https") {
+      //   return res.status(400).json({
+      //     error: "invalid_request",
+      //     error_description: "HTTPS is required for OAuth protected resources",
+      //   });
+      // }
 
       // Bearer tokenの抽出（OAuth 2.1ではheaderのみ）
       const token = extractBearerToken(req);

@@ -1,6 +1,6 @@
 import express from 'express';
-import https from 'https';
-import fs from 'fs';
+// import https from 'https';
+// import fs from 'fs';
 import session from 'express-session';
 import passport from 'passport';
 import path from 'path';
@@ -32,17 +32,17 @@ const app = express();
 
 
 // SSL証明書のパス
-const SSL_KEY_PATH = path.join(__dirname, '../ssl/localhost-key.pem');
-const SSL_CERT_PATH = path.join(__dirname, '../ssl/localhost.pem');
+// const SSL_KEY_PATH = path.join(__dirname, '../ssl/localhost-key.pem');
+// const SSL_CERT_PATH = path.join(__dirname, '../ssl/localhost.pem');
 
 // SSL証明書の存在確認
-const checkSSLCertificates = (): boolean => {
-  try {
-    return fs.existsSync(SSL_KEY_PATH) && fs.existsSync(SSL_CERT_PATH);
-  } catch {
-    return false;
-  }
-};
+// const checkSSLCertificates = (): boolean => {
+//   try {
+//     return fs.existsSync(SSL_KEY_PATH) && fs.existsSync(SSL_CERT_PATH);
+//   } catch {
+//     return false;
+//   }
+// };
 
 // TODO: CSPの無効化は一時的な対処法です。OAuth consent formの問題を根本的に解決する必要があります
 // セキュリティヘッダー（HTTPS/HTTPに応じて設定）
@@ -113,12 +113,12 @@ app.use('/api', ticketRoutes);
 import { getProtectedResourceMetadata } from './oauth/controllers/protected-resource-metadata.js';
 
 // OAuth 2.0 Authorization Server Metadata with CORS - allow all origins for metadata discovery
-const metadataCorsOptions = {
-  origin: '*',
-  methods: ['GET', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'mcp-protocol-version'],
-  credentials: false  // Public metadata doesn't need credentials
-};
+// const metadataCorsOptions = {
+//   origin: '*',
+//   methods: ['GET', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'mcp-protocol-version'],
+//   credentials: false  // Public metadata doesn't need credentials
+// };
 
 // app.get('/.well-known/oauth-authorization-server', cors(metadataCorsOptions), getAuthorizationServerMetadata);
 
@@ -212,35 +212,35 @@ const startServer = async (): Promise<void> => {
     // HTTPS モード
 
     // SSL証明書の確認
-    if (!checkSSLCertificates()) {
-      logger.error('SSL証明書が見つかりません');
-      logger.info('以下のコマンドでSSL証明書を生成してください:');
-      logger.info('  npm run generate-ssl');
-      logger.info('または:');
-      logger.info('  ./scripts/generate-ssl-cert.sh');
-      process.exit(1);
-    }
+    // if (!checkSSLCertificates()) {
+    //   logger.error('SSL証明書が見つかりません');
+    //   logger.info('以下のコマンドでSSL証明書を生成してください:');
+    //   logger.info('  npm run generate-ssl');
+    //   logger.info('または:');
+    //   logger.info('  ./scripts/generate-ssl-cert.sh');
+    //   process.exit(1);
+    // }
 
     // SSL証明書を読み込み
-    const privateKey = fs.readFileSync(SSL_KEY_PATH, 'utf8');
-    const certificate = fs.readFileSync(SSL_CERT_PATH, 'utf8');
-    const credentials = { key: privateKey, cert: certificate };
+    // const privateKey = fs.readFileSync(SSL_KEY_PATH, 'utf8');
+    // const certificate = fs.readFileSync(SSL_CERT_PATH, 'utf8');
+    // const credentials = { key: privateKey, cert: certificate };
 
     // HTTPサーバー（HTTPSへのリダイレクト用）
-    const httpApp = express();
-    httpApp.use((req, res) => {
-      const httpsUrl = `https://${req.headers.host?.replace(/:\d+/, `:${HTTPS_PORT}`)}${req.url}`;
-      res.redirect(301, httpsUrl);
-    });
+    // const httpApp = express();
+    // httpApp.use((req, res) => {
+    //   const httpsUrl = `https://${req.headers.host?.replace(/:\d+/, `:${HTTPS_PORT}`)}${req.url}`;
+    //   res.redirect(301, httpsUrl);
+    // });
 
     // HTTPSサーバーを起動
-    const httpsServer = https.createServer(credentials, app);
+    // const httpsServer = https.createServer(credentials, app);
 
-    httpsServer.listen(HTTPS_PORT, () => {
-      logger.info(`HTTPS Server running on https://localhost:${HTTPS_PORT}`);
-      logger.info(`MCP endpoint: https://localhost:${HTTPS_PORT}/mcp`);
-      logger.info(`MCP health check: https://localhost:${HTTPS_PORT}/mcp/health`);
-      logger.info(`App health check: https://localhost:${HTTPS_PORT}/health`);
+    app.listen(HTTPS_PORT, () => {
+      logger.info(`HTTPS Server running on http://localhost:${HTTPS_PORT}`);
+      logger.info(`MCP endpoint: http://localhost:${HTTPS_PORT}/mcp`);
+      logger.info(`MCP health check: http://localhost:${HTTPS_PORT}/mcp/health`);
+      logger.info(`App health check: http://localhost:${HTTPS_PORT}/health`);
     });
 
 
