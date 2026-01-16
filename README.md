@@ -11,6 +11,10 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
 - [3. MCP 認可フローの動作確認](#3-mcp-認可フローの動作確認)
   - [3.1 ローカルサーバーの起動](#31-ローカルサーバーの起動)
   - [3.2 curlコマンドを使用した動作確認手順](#32-curlコマンドを使用した動作確認手順)
+    - [3.2.1. Authorizationヘッダーを用いずにMCPサーバーにリクエスト](#321-authorizationヘッダーを用いずにmcpサーバーにリクエスト)
+    - [3.2.2. リソースサーバー（ = MCPサーバー）のメタデータを取得する](#322-リソースサーバー--mcpサーバーのメタデータを取得する)
+    - [3.2.3. 認可サーバーのメタデータを取得する](#323-認可サーバーのメタデータを取得する)
+    - [3.2.4. クライアントを登録する](#324-クライアントを登録する)
 - [4. MCP 認可フロー](#4-mcp-認可フロー)
 - [5. 認可サーバーの主要なエンドポイント](#5-認可サーバーの主要なエンドポイント)
   - [5.1 認可サーバーメタデータエンドポイント](#51-認可サーバーメタデータエンドポイント)
@@ -48,7 +52,13 @@ sh ./scripts/launch-local-server.sh
 
 ### 3.2 curlコマンドを使用した動作確認手順
 
-1. Authorizationヘッダーを用いずにMCPサーバーにリクエストする。
+#### 3.2.1. Authorizationヘッダーを用いずにMCPサーバーにリクエスト
+
+まず、MCPクライアントは認可情報を用いずにMCPサーバーにリクエストします。  
+MCPサーバーが保護されている場合、MCPサーバーからMCPクライアントに対してHTTP `401`レスポンスが返却されます。  
+この`401`レスポンスには、`WWW-Authenticate`ヘッダーが含まれており、`WWW-Authenticate`ヘッダーから`resource_server`（リソースサーバー = MCPサーバーのメタデータのURL）や`scope`（MCPサーバーにアクセスするために最低限必要な権限）などの情報が取得できます。
+
+このデモで実際に動かした際のリクエスト / レスポンスは下記の通りです。
 
 ```bash
 # リクエスト
@@ -85,7 +95,11 @@ Keep-Alive: timeout=5
 {"error":"invalid_request","error_description":"Access token is required"}
 ```
 
-2. `WWW-Authenticate`ヘッダーの`resource_metadata`に記載されているURLにリクエストする。
+#### 3.2.2. リソースサーバー（ = MCPサーバー）のメタデータを取得する
+
+先ほど`WWW-Authenticate`ヘッダーから取得した`resource_metadata`のURLにリクエストして、リソースサーバーのメタデータを取得します。リソースサーバーのメタデータには`authorization_servers`（このリソースサーバーで使用できる認可サーバー）の一覧が含まれています。クライアントはこの一覧の中から実際に使用する認可サーバーを選択し、以降の認可フローを実施します。（このデモでは認可サーバーは一つしかないため、自動的に当該認可サーバーを使用します。）
+
+このデモで実際に動かした際のリクエスト / レスポンスは下記の通りです。
 
 ```bash
 # リクエスト
@@ -120,7 +134,26 @@ Keep-Alive: timeout=5
 {"resource":"http://localhost:3443/mcp","authorization_servers":["https://vc-issuer.g-trustedweb.workers.dev"],"scopes_supported":["mcp:tickets:read","mcp:tickets:write"],"bearer_methods_supported":["header"],"resource_documentation":"http://localhost:3443/docs/mcp","resource_policy_uri":"http://localhost:3443/policy/mcp","authorization_details_types_supported":["ticket-reservation"]}
 ```
 
-3. レスポンスボディの`authorization_servers`から利用できる認可サーバーのURLを確認し、認可サーバーのメタデータをリクエストする。
+レスポンスボディはJSON形式になっています。
+
+```json
+{
+  "resource": "http://localhost:3443/mcp",
+  "authorization_servers": ["https://vc-issuer.g-trustedweb.workers.dev"],
+  "scopes_supported": ["mcp:tickets:read", "mcp:tickets:write"],
+  "bearer_methods_supported": ["header"],
+  "resource_documentation": "http://localhost:3443/docs/mcp",
+  "resource_policy_uri": "http://localhost:3443/policy/mcp",
+  "authorization_details_types_supported": ["ticket-reservation"]
+}
+```
+
+#### 3.2.3. 認可サーバーのメタデータを取得する
+
+先ほど、リソースサーバーのメタデータから取得した、`authorization_servers`の中から認可サーバーを一つ選択し、その認可サーバーのメタデータを取得します。認可サーバーのメタデータには後続の認可フローで使用するエンドポイントのURLなどの情報が含まれています。認可サーバーのメタデータを取得する際には、リソースサーバーのメタデータから取得した認可サーバーのURLの末尾に`/.well-known/oauth-authorization-server`または`/.well-known/openid-configuration`をつけてリクエストします。MCPの認可の仕様では`/.well-known/oauth-authorization-server`にリクエストしてメタデータが見つからない場合、`/.well-known/openid-configuration`にリクエストすることになっています。
+
+このデモで実際に動かした際のリクエスト / レスポンスは下記の通りです。  
+レスポンスボディは後続の手順で必要になるためメモしておいて下さい。
 
 ```bash
 # リクエスト
@@ -144,6 +177,12 @@ server: cloudflare
 cf-ray: 9beb9dd09814fcaf-KIX
 alt-svc: h3=":443"; ma=86400
 
+{"issuer":"https://vc-issuer.g-trustedweb.workers.dev","authorization_endpoint":"https://vc-issuer.g-trustedweb.workers.dev/api/authorization","token_endpoint":"https://vc-issuer.g-trustedweb.workers.dev/api/token","registration_endpoint":"https://vc-issuer.g-trustedweb.workers.dev/connect/register","scopes_supported":["address","email","openid","offline_access","phone","profile","grant_management_query","grant_management_revoke","org.iso.18013.5.1.mDL","test","mcp:tickets:read","mcp:tickets:write"],"response_types_supported":["none","code","id_token","codeid_token"],}
+```
+
+レスポンスボディはJSON形式になっています。
+
+```json
 {
   "issuer": "https://vc-issuer.g-trustedweb.workers.dev",
   "authorization_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/api/authorization",
@@ -172,7 +211,15 @@ alt-svc: h3=":443"; ma=86400
 }
 ```
 
-4. 認可サーバーのメタデータから`registration_endpoint`のURLを取得し、クライアントの登録をリクエストする。
+#### 3.2.4. クライアントを登録する
+
+多くのケースで、MCPクライアントはMCPサーバーから提示された認可サーバーと事前にやり取りをすることができません。  
+一方で、OAuth2.1のフローで認可を行うためにはMCPクライアントが認可サーバーにOAuthクライアントとして登録されている必要があります。  
+そこで、認可フローを開始する前にMCPクライアントが自身をOAuthクライアントとして認可サーバーに登録するようにリクエストします。
+リクエストには先ほど取得した認可サーバーのメタデータに含まれる`registration_endpoint`を使用します。
+
+このデモで実際に動かした際のリクエスト / レスポンスは下記の通りです。
+レスポンスボディに含まれている`client_id`は後続の手順で必要になるためメモしておいて下さい。  
 
 ```bash
 # リクエスト
@@ -207,6 +254,42 @@ cf-ray: 9beba9230c40d3cd-KIX
 alt-svc: h3=":443"; ma=86400
 
 {"default_max_age":0,"client_id":"1687054126","backchannel_user_code_parameter":false,"client_id_issued_at":1768546039,"tls_client_certificate_bound_access_tokens":false,"id_token_signed_response_alg":"RS256","redirect_uris":["http://localhost:6274/oauth/callback/debug"],"require_signed_request_object":false,"response_types":["code"],"client_uri":"https://github.com/modelcontextprotocol/inspector","registration_client_uri":"https://vc-issuer.g-trustedweb.workers.dev/connect/register/1687054126","registration_access_token":"msVNZHIuRTX8MW7Y03O1usW0TqK70-M1l6whFy6cUeM","token_endpoint_auth_method":"none","use_mtls_endpoint_aliases":false,"require_pushed_authorization_requests":false,"scope":"mcp:tickets:read mcp:tickets:write","client_name":"MCP Inspector","grant_types":["authorization_code","refresh_token"],"subject_type":"public","response_modes":["query","fragment","form_post","jwt","query.jwt","fragment.jwt","form_post.jwt"],"client_secret_expires_at":0}
+```
+
+レスポンスボディはJSON形式になっています。
+
+```json
+{
+  "default_max_age": 0,
+  "client_id": "1687054126",
+  "backchannel_user_code_parameter": false,
+  "client_id_issued_at": 1768546039,
+  "tls_client_certificate_bound_access_tokens": false,
+  "id_token_signed_response_alg": "RS256",
+  "redirect_uris": ["http://localhost:6274/oauth/callback/debug"],
+  "require_signed_request_object": false,
+  "response_types": ["code"],
+  "client_uri": "https://github.com/modelcontextprotocol/inspector",
+  "registration_client_uri": "https://vc-issuer.g-trustedweb.workers.dev/connect/register/1687054126",
+  "registration_access_token": "msVNZHIuRTX8MW7Y03O1usW0TqK70-M1l6whFy6cUeM",
+  "token_endpoint_auth_method": "none",
+  "use_mtls_endpoint_aliases": false,
+  "require_pushed_authorization_requests": false,
+  "scope": "mcp:tickets:read mcp:tickets:write",
+  "client_name": "MCP Inspector",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "subject_type": "public",
+  "response_modes": [
+    "query",
+    "fragment",
+    "form_post",
+    "jwt",
+    "query.jwt",
+    "fragment.jwt",
+    "form_post.jwt"
+  ],
+  "client_secret_expires_at": 0
+}
 ```
 
 5. 作成されたクライアントの`client_id`を使用してブラウザで認可リクエストする。（`client_id`は適宜書き換える。）
