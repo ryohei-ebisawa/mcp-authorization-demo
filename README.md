@@ -11,13 +11,13 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
 - [3. MCP 認可フローの動作確認](#3-mcp-認可フローの動作確認)
   - [3.1 ローカルサーバーの起動](#31-ローカルサーバーの起動)
   - [3.2 curlコマンドを使用した動作確認手順](#32-curlコマンドを使用した動作確認手順)
-    - [3.2.1. Authorizationヘッダーを用いずにMCPサーバーにリクエスト](#321-authorizationヘッダーを用いずにmcpサーバーにリクエスト)
-    - [3.2.2. リソースサーバー（ = MCPサーバー）のメタデータを取得する](#322-リソースサーバー--mcpサーバーのメタデータを取得する)
+    - [3.2.1. 最初のアクセス（Authorizationヘッダーなし）](#321-最初のアクセスauthorizationヘッダーなし)
+    - [3.2.2. リソースサーバー（MCPサーバー）のメタデータを取得する](#322-リソースサーバーmcpサーバーのメタデータを取得する)
     - [3.2.3. 認可サーバーのメタデータを取得する](#323-認可サーバーのメタデータを取得する)
-    - [3.2.4. クライアントを登録する](#324-クライアントを登録する)
-    - [3.2.5. 認可リクエストを実行する](#325-認可リクエストを実行する)
+    - [3.2.4. クライアントを登録する（動的クライアント登録）](#324-クライアントを登録する動的クライアント登録)
+    - [3.2.5. 認可リクエストを実行する（ブラウザでの承認）](#325-認可リクエストを実行するブラウザでの承認)
     - [3.2.6 トークンリクエストを実行する](#326-トークンリクエストを実行する)
-    - [3.2.7 Authorizationヘッダーを用いてMCPサーバーにリクエストする](#327-authorizationヘッダーを用いてmcpサーバーにリクエストする)
+    - [3.2.7 トークンを使ってMCPサーバーにリクエストする](#327-トークンを使ってmcpサーバーにリクエストする)
 - [4. MCP 認可フロー](#4-mcp-認可フロー)
 - [5. 認可サーバーの主要なエンドポイント](#5-認可サーバーの主要なエンドポイント)
   - [5.1 認可サーバーメタデータエンドポイント](#51-認可サーバーメタデータエンドポイント)
@@ -55,13 +55,18 @@ sh ./scripts/launch-local-server.sh
 
 ### 3.2 curlコマンドを使用した動作確認手順
 
-#### 3.2.1. Authorizationヘッダーを用いずにMCPサーバーにリクエスト
+ここでは、ターミナルで `curl` コマンドを使い、実際にサーバーと通信しながら認可の流れを体験します。
+「MCPクライアント」が、まだ権限を持っていない状態からスタートし、最終的に「アクセストークン」を手に入れて「MCPサーバー」の機能を使えるようになるまでのステップを順に追っていきます。
 
-まず、MCPクライアントは認可情報を用いずにMCPサーバーにリクエストします。  
-MCPサーバーが保護されている場合、MCPサーバーからMCPクライアントに対してHTTP `401`レスポンスが返却されます。  
-この`401`レスポンスには、`WWW-Authenticate`ヘッダーが含まれており、`WWW-Authenticate`ヘッダーから`resource_server`（リソースサーバー = MCPサーバーのメタデータのURL）や`scope`（MCPサーバーにアクセスするために最低限必要な権限）などの情報が取得できます。
+#### 3.2.1. 最初のアクセス（Authorizationヘッダーなし）
 
-このデモで実際に動かした際のリクエスト / レスポンスは下記の通りです。
+まずは、**何の権限（アクセストークン）も持たずに** MCPサーバーにアクセスしてみます。
+当然、サーバーは「誰ですか？権限がありません」と拒否します（HTTP 401 Unauthorized）。
+
+しかし、この拒否レスポンスには重要なヒントが含まれています。
+「アクセスするにはトークンが必要です。トークンを発行するための情報はここにありますよ」という案内（`WWW-Authenticate` ヘッダー）が返ってくるのです。
+
+**実行するコマンド:**
 
 ```bash
 # リクエスト
@@ -71,119 +76,68 @@ curl -iX POST http://localhost:3443/mcp \
     -d '{"method":"notifications/initialized","jsonrpc":"2.0"}'
 ```
 
-```bash
-# レスポンス
-HTTP/1.1 401 Unauthorized
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Resource-Policy: same-origin
-Origin-Agent-Cluster: ?1
-Referrer-Policy: no-referrer
-Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-X-Content-Type-Options: nosniff
-X-DNS-Prefetch-Control: off
-X-Download-Options: noopen
-X-Frame-Options: SAMEORIGIN
-X-Permitted-Cross-Domain-Policies: none
-X-XSS-Protection: 0
-Vary: Origin
-Access-Control-Allow-Credentials: true
-WWW-Authenticate: Bearer realm="http://localhost:3443", error="invalid_request", error_description="Access token is required", resource_metadata="http://localhost:3443/.well-known/oauth-protected-resource/mcp", scope="mcp:tickets:read"
-Content-Type: application/json; charset=utf-8
-Content-Length: 74
-ETag: W/"4a-chtfV9P482M7qfx9ctf/dIuif+o"
-Date: Fri, 16 Jan 2026 06:20:33 GMT
-Connection: keep-alive
-Keep-Alive: timeout=5
+**結果の確認:**
 
-{"error":"invalid_request","error_description":"Access token is required"}
+レスポンスヘッダーの `WWW-Authenticate` の部分に注目してください。
+
+```bash
+# レスポンス（抜粋）
+HTTP/1.1 401 Unauthorized
+...
+WWW-Authenticate: Bearer realm="http://localhost:3443", ..., resource_metadata="http://localhost:3443/.well-known/oauth-protected-resource/mcp", ...
+...
 ```
 
-#### 3.2.2. リソースサーバー（ = MCPサーバー）のメタデータを取得する
+ここにある `resource_metadata` のURLが、次のステップへの案内です。
 
-先ほど`WWW-Authenticate`ヘッダーから取得した`resource_metadata`のURLにリクエストして、リソースサーバーのメタデータを取得します。リソースサーバーのメタデータには`authorization_servers`（このリソースサーバーで使用できる認可サーバー）の一覧が含まれています。クライアントはこの一覧の中から実際に使用する認可サーバーを選択し、以降の認可フローを実施します。（このデモでは認可サーバーは一つしかないため、自動的に当該認可サーバーを使用します。）
+#### 3.2.2. リソースサーバー（MCPサーバー）のメタデータを取得する
 
-このデモで実際に動かした際のリクエスト / レスポンスは下記の通りです。
+前のステップで確認した `resource_metadata` のURLにアクセスして、**このサーバーの詳細情報（メタデータ）** を取得します。
+ここには、「このMCPサーバーを使うためのアクセストークンは、どの認可サーバーで発行できるか」という情報が書かれています。
+
+**実行するコマンド:**
 
 ```bash
 # リクエスト
 curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp
 ```
 
-```bash
-# レスポンス
-HTTP/1.1 200 OK
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Resource-Policy: same-origin
-Origin-Agent-Cluster: ?1
-Referrer-Policy: no-referrer
-Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-X-Content-Type-Options: nosniff
-X-DNS-Prefetch-Control: off
-X-Download-Options: noopen
-X-Frame-Options: SAMEORIGIN
-X-Permitted-Cross-Domain-Policies: none
-X-XSS-Protection: 0
-Vary: Origin
-Access-Control-Allow-Credentials: true
-Content-Type: application/json; charset=utf-8
-Cache-Control: public, max-age=3600
-Access-Control-Allow-Origin: *
-Content-Length: 387
-ETag: W/"183-l7a4e8G0p2xK/Od2f+n4aM3za8c"
-Date: Fri, 16 Jan 2026 06:27:20 GMT
-Connection: keep-alive
-Keep-Alive: timeout=5
+**結果の確認:**
 
-{"resource":"http://localhost:3443/mcp","authorization_servers":["https://vc-issuer.g-trustedweb.workers.dev"],"scopes_supported":["mcp:tickets:read","mcp:tickets:write"],"bearer_methods_supported":["header"],"resource_documentation":"http://localhost:3443/docs/mcp","resource_policy_uri":"http://localhost:3443/policy/mcp","authorization_details_types_supported":["ticket-reservation"]}
-```
-
-レスポンスボディはJSON形式になっています。
+レスポンス（JSON）の中に `authorization_servers` という項目があります。  
 
 ```json
 {
   "resource": "http://localhost:3443/mcp",
   "authorization_servers": ["https://vc-issuer.g-trustedweb.workers.dev"],
-  "scopes_supported": ["mcp:tickets:read", "mcp:tickets:write"],
-  "bearer_methods_supported": ["header"],
-  "resource_documentation": "http://localhost:3443/docs/mcp",
-  "resource_policy_uri": "http://localhost:3443/policy/mcp",
-  "authorization_details_types_supported": ["ticket-reservation"]
+  ...
 }
 ```
 
+このURL（`https://vc-issuer.g-trustedweb.workers.dev`）が、今回利用すべき**認可サーバー**です。
+
+> [!NOTE]
+> 今回のデモでは認可サーバーが一つだけですが、実際には認可サーバーは複数の場合があり、MCPクライアントはその中から使用する認可サーバーを選択します。
+
 #### 3.2.3. 認可サーバーのメタデータを取得する
 
-先ほど、リソースサーバーのメタデータから取得した、`authorization_servers`の中から認可サーバーを一つ選択し、その認可サーバーのメタデータを取得します。認可サーバーのメタデータには後続の認可フローで使用するエンドポイントのURLなどの情報が含まれています。認可サーバーのメタデータを取得する際には、リソースサーバーのメタデータから取得した認可サーバーのURLの末尾に`/.well-known/oauth-authorization-server`または`/.well-known/openid-configuration`をつけてリクエストします。MCPの認可の仕様では`/.well-known/oauth-authorization-server`にリクエストしてメタデータが見つからない場合、`/.well-known/openid-configuration`にリクエストすることになっています。
+認可サーバーがわかったので、次はその**具体的なエンドポイント**を調べます。
+認可サーバーのURLの後ろに `/.well-known/oauth-authorization-server` を付けたURLにアクセスすると、設定情報が取得できます。
 
-このデモで実際に動かした際のリクエスト / レスポンスは下記の通りです。  
-レスポンスボディは後続の手順で必要になるためメモしておいて下さい。
+**実行するコマンド:**
 
 ```bash
 # リクエスト
 curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorization-server
 ```
 
-```bash
-# レスポンス（レスポンスボディは長いため中略）
-HTTP/2 200 
-date: Fri, 16 Jan 2026 06:39:35 GMT
-content-type: application/json;charset=utf-8
-content-length: 8013
-access-control-allow-origin: *
-cache-control: no-store
-set-cookie: __session=cec0ad80-056c-4f7f-8c1f-8f92b524b021; Max-Age=86400; Path=/; HttpOnly; Secure; SameSite=Lax
-pragma: no-cache
-vary: accept-encoding
-report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=Q7Xf5l%2BgmDJrNP%2BpH4s5tv3GuBaoF13JfWTzrgr6X4qcns1vYyImLYnz%2FrYYl8uXhD4GYzfd5YNrq%2BF5Q5%2BprYD2WbWv8cUjtzabLSnxN6KDIs2MAKZkDPTkc0%2BOf%2FFvNEc%3D"}]}
-nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-server: cloudflare
-cf-ray: 9beb9dd09814fcaf-KIX
-alt-svc: h3=":443"; ma=86400
+**結果の確認:**
 
-{"issuer":"https://vc-issuer.g-trustedweb.workers.dev","authorization_endpoint":"https://vc-issuer.g-trustedweb.workers.dev/api/authorization","token_endpoint":"https://vc-issuer.g-trustedweb.workers.dev/api/token","registration_endpoint":"https://vc-issuer.g-trustedweb.workers.dev/connect/register","scopes_supported":["address","email","openid","offline_access","phone","profile","grant_management_query","grant_management_revoke","org.iso.18013.5.1.mDL","test","mcp:tickets:read","mcp:tickets:write"],"response_types_supported":["none","code","id_token","codeid_token"],}
-```
+レスポンス（JSON）から、以下の3つのURLを確認します。これらが後の手順で使うエンドポイントです。
 
-レスポンスボディはJSON形式になっています。
+- `registration_endpoint`: アプリを登録するエンドポイント (`.../connect/register`)
+- `authorization_endpoint`: ユーザーが承認を行う画面のURL (`.../api/authorization`)
+- `token_endpoint`: 認可コードをトークンに交換するエンドポイント (`.../api/token`)
 
 ```json
 {
@@ -191,38 +145,18 @@ alt-svc: h3=":443"; ma=86400
   "authorization_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/api/authorization",
   "token_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/api/token",
   "registration_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/connect/register",
-  "scopes_supported": [
-    "address",
-    "email",
-    "openid",
-    "offline_access",
-    "phone",
-    "profile",
-    "grant_management_query",
-    "grant_management_revoke",
-    "org.iso.18013.5.1.mDL",
-    "test",
-    "mcp:tickets:read",
-    "mcp:tickets:write"
-  ],
-  "response_types_supported": [
-    "none",
-    "code",
-    "id_token",
-    "code id_token"
-  ],
+  ...
 }
 ```
 
-#### 3.2.4. クライアントを登録する
+#### 3.2.4. クライアントを登録する（動的クライアント登録）
 
-多くのケースで、MCPクライアントはMCPサーバーから提示された認可サーバーと事前にやり取りをすることができません。  
-一方で、OAuth2.1のフローで認可を行うためにはMCPクライアントが認可サーバーにOAuthクライアントとして登録されている必要があります。  
-そこで、認可フローを開始する前にMCPクライアントが自身をOAuthクライアントとして認可サーバーに登録するようにリクエストします。
-リクエストには先ほど取得した認可サーバーのメタデータに含まれる`registration_endpoint`を使用します。
+認可サーバーを利用するには、まず「私はこういうアプリです」と名乗って登録する必要があります。
+通常は事前に手動登録することもありますが、今回は**その場で自動的に登録する仕組み（動的クライアント登録）** を利用します。
 
-このデモで実際に動かした際のリクエスト / レスポンスは下記の通りです。
-レスポンスボディに含まれている`client_id`は後続の手順で必要になるためメモしておいて下さい。  
+認可サーバーの登録エンドポイントに対して登録リクエストを送ります。
+
+**実行するコマンド:**
 
 ```bash
 # リクエスト
@@ -239,174 +173,121 @@ curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/connect/register \
         }'
 ```
 
-```bash
-# レスポンス
-HTTP/2 201 
-date: Fri, 16 Jan 2026 06:47:19 GMT
-content-type: application/json;charset=utf-8
-content-length: 970
-access-control-allow-origin: *
-cache-control: no-store
-set-cookie: __session=e2aef599-695d-47e3-93f0-9b314bfdfa1e; Max-Age=86400; Path=/; HttpOnly; Secure; SameSite=Lax
-pragma: no-cache
-vary: accept-encoding
-report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=uOnjKyrrMG0IlmMlxXk1bkLqtdB9TUSrt7OB5UjIWSBSrGAxV5iI4950nFIOa6ZK6hS3o5INzx1fnT2RHw1eVCD1OqGdW%2BELwESSSCfswmsEASrGY0es8enSylNJhHUjkis%3D"}]}
-nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-server: cloudflare
-cf-ray: 9beba9230c40d3cd-KIX
-alt-svc: h3=":443"; ma=86400
+**結果の確認と変数の設定:**
 
-{"default_max_age":0,"client_id":"1687054126","backchannel_user_code_parameter":false,"client_id_issued_at":1768546039,"tls_client_certificate_bound_access_tokens":false,"id_token_signed_response_alg":"RS256","redirect_uris":["http://localhost:6274/oauth/callback/debug"],"require_signed_request_object":false,"response_types":["code"],"client_uri":"https://github.com/modelcontextprotocol/inspector","registration_client_uri":"https://vc-issuer.g-trustedweb.workers.dev/connect/register/1687054126","registration_access_token":"msVNZHIuRTX8MW7Y03O1usW0TqK70-M1l6whFy6cUeM","token_endpoint_auth_method":"none","use_mtls_endpoint_aliases":false,"require_pushed_authorization_requests":false,"scope":"mcp:tickets:read mcp:tickets:write","client_name":"MCP Inspector","grant_types":["authorization_code","refresh_token"],"subject_type":"public","response_modes":["query","fragment","form_post","jwt","query.jwt","fragment.jwt","form_post.jwt"],"client_secret_expires_at":0}
-```
-
-レスポンスボディはJSON形式になっています。
+レスポンスに含まれる `client_id` は**次のステップで必ず必要になる**重要なIDです。
 
 ```json
 {
-  "default_max_age": 0,
+  ...
   "client_id": "1687054126",
-  "backchannel_user_code_parameter": false,
-  "client_id_issued_at": 1768546039,
-  "tls_client_certificate_bound_access_tokens": false,
-  "id_token_signed_response_alg": "RS256",
-  "redirect_uris": ["http://localhost:6274/oauth/callback/debug"],
-  "require_signed_request_object": false,
-  "response_types": ["code"],
-  "client_uri": "https://github.com/modelcontextprotocol/inspector",
-  "registration_client_uri": "https://vc-issuer.g-trustedweb.workers.dev/connect/register/1687054126",
-  "registration_access_token": "msVNZHIuRTX8MW7Y03O1usW0TqK70-M1l6whFy6cUeM",
-  "token_endpoint_auth_method": "none",
-  "use_mtls_endpoint_aliases": false,
-  "require_pushed_authorization_requests": false,
-  "scope": "mcp:tickets:read mcp:tickets:write",
-  "client_name": "MCP Inspector",
-  "grant_types": ["authorization_code", "refresh_token"],
-  "subject_type": "public",
-  "response_modes": [
-    "query",
-    "fragment",
-    "form_post",
-    "jwt",
-    "query.jwt",
-    "fragment.jwt",
-    "form_post.jwt"
-  ],
-  "client_secret_expires_at": 0
+  ...
 }
 ```
 
-#### 3.2.5. 認可リクエストを実行する
-
-ブラウザを用いて認可リクエストを実行します。認可エンドポイントのURLは認可サーバーのメタデータの`authorization_endpoint`から取得したものを使用します。また、`client_id`は先ほど作成したクライアントの`client_id`を使用します。認可リクエストのクエリパラメータには次の値を含めて下さい。`resource`パラメータはアクセスしたいMCPサーバーのURLです。`resource`パラメータは必ずリクエストに含める必要があります。
-
-- response_type: code
-- client_id: 先ほど作成したクライアントの`client_id`
-- code_challenge: ランダムな値のハッシュ値をBase64URLでエンコードしたもの（アルゴリズムはSHA-256）
-- code_challenge_method: S256
-- redirect_uri: http://localhost:6274/oauth/callback/debug
-- state: ランダムな値
-- scope: mcp:tickets:read mcp:tickets:write
-- resource: http://localhost:3443/mcp
-
-実際のURLは下記のようになります。URLにアクセスすると同意画面が表示されます。
+この `client_id`の値 （例：`1687054126`）をコピーして、変数 `CLIENT_ID` に設定します。
 
 ```bash
-# リクエストURL
-
-https://vc-issuer.g-trustedweb.workers.dev/api/authorization?response_type=code&client_id=1687054126&code_challenge=Skniu4mLy-GJhZzvSmLQpxDLGa_eSwW_cayjPqYSAaw&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&state=90a927408e0065c96358550992ed9ddee5fd796abef051060617560da32ab6a4&scope=mcp%3Atickets%3Aread+mcp%3Atickets%3Awrite&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp
+# 【入力】レスポンスの client_id の値をセットします
+CLIENT_ID="YOUR_CLIENT_ID"
 ```
 
-同意画面にて、以下の認証情報を入力して`Authorize`ボタンをクリックして下さい。
+#### 3.2.5. 認可リクエストを実行する（ブラウザでの承認）
 
-ID: `inga`
-PW: `inga`
+ここからはコマンドではなく、**Webブラウザ**を使います。
+ユーザーがログインし、「このアプリに権限を与えてもよい」と承認するプロセスです。
 
-認証に成功すると、以下のようなURLにリダイレクトされます。
-URLの`code`クエリパラメータから認可コードを取得することができます。（このデモでは、認可コードを画面にも表示していますのでそちらからも取得できます。）
+以下の**URLを生成するコマンド**を実行し、表示されたURLをコピーしてください。
+
+**URLを生成するコマンド:**
 
 ```bash
-# コールバックURL
-http://localhost:6274/oauth/callback/debug?state=90a927408e0065c96358550992ed9ddee5fd796abef051060617560da32ab6a4&code=MggNs47bcav_X55Ck8yBjLJ5RQqaLDAWMrRG_e0F4uI&iss=https%3A%2F%2Fvc-issuer.g-trustedweb.workers.dev
+# Code Verifier (ランダム文字列) の生成
+CODE_VERIFIER=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=')
+
+# Code Challenge (Verifierのハッシュ値) の生成
+CODE_CHALLENGE=$(echo -n "$CODE_VERIFIER" | openssl sha256 -binary | openssl base64 | tr '+/' '-_' | tr -d '=')
+
+# 認可リクエスト用URLを表示します
+echo "https://vc-issuer.g-trustedweb.workers.dev/api/authorization?response_type=code&client_id=$CLIENT_ID&code_challenge=$CODE_CHALLENGE&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&state=random_state_value&scope=mcp%3Atickets%3Aread+mcp%3Atickets%3Awrite&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp"
+```
+
+**ブラウザでの操作:**
+
+1. 上記コマンドで表示された `https://...` から始まるURLをコピーし、ブラウザでアクセスします。
+2. 同意画面が表示されたら、以下の認証情報を入力して`Authorize`（承認）ボタンをクリックします。
+   - **ID**: `inga`
+   - **PW**: `inga`
+
+**結果の確認と変数の設定:**
+
+承認が終わると、画面が切り替わるか、指定したURL（localhost）にリダイレクトされます。
+その際、ブラウザのアドレスバー（または画面表示）にある `code=` の後ろの文字列が重要です。これが**認可コード**です。
+
+```bash
+http://localhost:6274/oauth/callback/debug?state=...&code=MggNs47bcav...&iss=...
+```
+
+この `code` の値（`&`の前まで）をコピーして、変数 `CODE` に設定します。
+
+```bash
+# 【入力】ブラウザで取得した認可コードをセットします
+CODE="YOUR_CODE"
 ```
 
 #### 3.2.6 トークンリクエストを実行する
 
-認可リクエストの結果として取得した認可コードを用いて認可サーバーにトークンリクエストを行います。また、`client_id`は先ほど作成したクライアントの`client_id`を使用します。`resource`パラメータには認可リクエストで指定したものと同じMCPサーバーのURLを指定して下さい。
+手に入れた「認可コード」を使って、ついに**アクセストークン**を受け取ります。
+これまで設定してきた変数 `$CODE`、`$CLIENT_ID` を使うので、コマンドの書き換えは不要です。
+
+**実行するコマンド:**
 
 ```bash
 # リクエスト
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
-    -d "grant_type=authorization_code&code=MggNs47bcav_X55Ck8yBjLJ5RQqaLDAWMrRG_e0F4uI&code_verifier=bgQH5h5Aizcmvw98iJUVeiXhkzKa_oz8nJ8Y_JodWXM&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp&client_id=1687054126"
+    -d "grant_type=authorization_code&code=$CODE&code_verifier=$CODE_VERIFIER&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp&client_id=$CLIENT_ID"
 ```
 
-```bash
-# レスポンス
-HTTP/2 200 
-date: Fri, 16 Jan 2026 07:01:05 GMT
-content-type: application/json;charset=utf-8
-content-length: 210
-access-control-allow-origin: *
-cache-control: no-store
-set-cookie: __session=d2f9786f-cbc0-4f69-bd6d-da8b28228204; Max-Age=86400; Path=/; HttpOnly; Secure; SameSite=Lax
-pragma: no-cache
-vary: accept-encoding
-report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=EBu9p99GPt9eL8be9mgUMU6lpgucmkRf0T2QK9WaRR54iOU2ifqaSvBMFRBf5ij5DfdUXpHL8nIDUpV1s7%2B%2Bhkw8t1lIi3YaezZDPOC%2FEnTmngjSp86LpFojaV8oM0U4j7s%3D"}]}
-nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
-server: cloudflare
-cf-ray: 9bebbd574f5b8382-KIX
-alt-svc: h3=":443"; ma=86400
+**結果の確認と変数の設定:**
 
-{"access_token":"IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU","token_type":"Bearer","expires_in":86400,"scope":"mcp:tickets:read mcp:tickets:write","refresh_token":"quiRRKL1NWotRSJOYpegKPZQn5_G6NezhRFIJKGcrJs"}
-```
-
-レスポンスボディはJSON形式になっており、ここからアクセストークンが取得できます。
+成功すると、レスポンス（JSON）に `access_token` が含まれています。これが**目的のアクセストークン**です。
 
 ```json
 {
   "access_token": "IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU",
   "token_type": "Bearer",
-  "expires_in": 86400,
-  "scope": "mcp:tickets:read mcp:tickets:write",
-  "refresh_token": "quiRRKL1NWotRSJOYpegKPZQn5_G6NezhRFIJKGcrJs"
+  ...
 }
 ```
 
-#### 3.2.7 Authorizationヘッダーを用いてMCPサーバーにリクエストする
+このトークン（例：`IU7JGeo...`）をコピーして、変数 `ACCESS_TOKEN` に設定します。
 
-先ほど発行したアクセストークンをAuthorizationヘッダーに設定して再度MCPサーバーへのリクエストを試みます。Authorizationヘッダーを用いずにリクエストした際には`401 UnAuthorized`レスポンスがMCPサーバーから返されましたが、今回は`202 Accepted`レスポンスが返されます。無事にMCPサーバーへリクエストできました。
+```bash
+# 【入力】レスポンスの access_token の値をセットします
+ACCESS_TOKEN="YOUR_ACCESS_TOKEN"
+```
+
+#### 3.2.7 トークンを使ってMCPサーバーにリクエストする
+
+最後に、手に入れた「アクセストークン」を使って、最初に拒否されたリクエストにもう一度挑戦します。
+変数 `$ACCESS_TOKEN` をヘッダーに埋め込んで送信します。
+
+**実行するコマンド:**
 
 ```bash
 # リクエスト
 curl -iX POST http://localhost:3443/mcp \
-    -H "Authorization: Bearer IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Accept: application/json, text/event-stream" \
     -H "Content-Type: application/json" \
     -d '{"method":"notifications/initialized","jsonrpc":"2.0"}'
 ```
 
-```bash
-# レスポンス
-HTTP/1.1 202 Accepted
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Resource-Policy: same-origin
-Origin-Agent-Cluster: ?1
-Referrer-Policy: no-referrer
-Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-X-Content-Type-Options: nosniff
-X-DNS-Prefetch-Control: off
-X-Download-Options: noopen
-X-Frame-Options: SAMEORIGIN
-X-Permitted-Cross-Domain-Policies: none
-X-XSS-Protection: 0
-Vary: Origin
-Access-Control-Allow-Credentials: true
-content-type: text/plain; charset=UTF-8
-Date: Fri, 16 Jan 2026 07:26:24 GMT
-Connection: keep-alive
-Keep-Alive: timeout=5
-Transfer-Encoding: chunked
-```
+**結果の確認:**
+
+今度は `401 Unauthorized` ではなく、`202 Accepted`（または `200 OK`）が返ってくるはずです。
+これで、認可された状態で安全にMCPサーバーへアクセスできることが確認できました。
 
 ## 4. MCP 認可フロー
 
