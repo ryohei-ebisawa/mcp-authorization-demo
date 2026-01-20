@@ -10,24 +10,24 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
 - [2. ローカル環境構築](#2-ローカル環境構築)
   - [2.1. リポジトリのクローン](#21-リポジトリのクローン)
   - [2.2. 依存パッケージのインストール](#22-依存パッケージのインストール)
-- [3. MCP 認可フローの動作確認](#3-mcp-認可フローの動作確認)
-  - [3.1. ローカルサーバーの起動](#31-ローカルサーバーの起動)
-  - [3.2. curlコマンドを使用した動作確認手順](#32-curlコマンドを使用した動作確認手順)
-    - [3.2.1. 最初のアクセス（Authorizationヘッダーなし）](#321-最初のアクセスauthorizationヘッダーなし)
-    - [3.2.2. リソースサーバー（MCPサーバー）のメタデータを取得する](#322-リソースサーバーmcpサーバーのメタデータを取得する)
-    - [3.2.3. 認可サーバーのメタデータを取得する](#323-認可サーバーのメタデータを取得する)
-    - [3.2.4. クライアントを登録する（動的クライアント登録）](#324-クライアントを登録する動的クライアント登録)
-    - [3.2.5. 認可リクエストを実行する（ブラウザでの承認）](#325-認可リクエストを実行するブラウザでの承認)
-    - [3.2.6. トークンリクエストを実行する](#326-トークンリクエストを実行する)
-    - [3.2.7. トークンを使ってMCPサーバーにリクエストする](#327-トークンを使ってmcpサーバーにリクエストする)
-    - [3.2.8. トークンの検証（MCPサーバーの動作確認）](#328-トークンの検証mcpサーバーの動作確認)
-  - [3.3. MCP Inspectorを使用した動作確認手順](#33-mcp-inspectorを使用した動作確認手順)
-    - [3.3.1. MCP Inspectorにアクセスする](#331-mcp-inspectorにアクセスする)
-    - [3.3.2. MCP Inspectorの準備](#332-mcp-inspectorの準備)
-    - [3.3.3. 認可設定画面を開く](#333-認可設定画面を開く)
-    - [3.3.4. 認可フローを実行する](#334-認可フローを実行する)
-    - [3.3.5. MCPサーバーに接続する](#335-mcpサーバーに接続する)
-- [4. MCP 認可フロー](#4-mcp-認可フロー)
+- [3. MCP 認可フロー](#3-mcp-認可フロー)
+- [4. MCP 認可フローの動作確認](#4-mcp-認可フローの動作確認)
+  - [4.1. ローカルサーバーの起動](#41-ローカルサーバーの起動)
+  - [4.2. curlコマンドを使用した動作確認手順](#42-curlコマンドを使用した動作確認手順)
+    - [4.2.1. 最初のアクセス（Authorizationヘッダーなし）](#421-最初のアクセスauthorizationヘッダーなし)
+    - [4.2.2. リソースサーバー（MCPサーバー）のメタデータを取得する](#422-リソースサーバーmcpサーバーのメタデータを取得する)
+    - [4.2.3. 認可サーバーのメタデータを取得する](#423-認可サーバーのメタデータを取得する)
+    - [4.2.4. クライアントを登録する（動的クライアント登録）](#424-クライアントを登録する動的クライアント登録)
+    - [4.2.5. 認可リクエストを実行する（ブラウザでの承認）](#425-認可リクエストを実行するブラウザでの承認)
+    - [4.2.6. トークンリクエストを実行する](#426-トークンリクエストを実行する)
+    - [4.2.7. トークンを使ってMCPサーバーにリクエストする](#427-トークンを使ってmcpサーバーにリクエストする)
+    - [4.2.8. トークンの検証（MCPサーバーの動作確認）](#428-トークンの検証mcpサーバーの動作確認)
+  - [4.3. MCP Inspectorを使用した動作確認手順](#43-mcp-inspectorを使用した動作確認手順)
+    - [4.3.1. MCP Inspectorにアクセスする](#431-mcp-inspectorにアクセスする)
+    - [4.3.2. MCP Inspectorの準備](#432-mcp-inspectorの準備)
+    - [4.3.3. 認可設定画面を開く](#433-認可設定画面を開く)
+    - [4.3.4. 認可フローを実行する](#434-認可フローを実行する)
+    - [4.3.5. MCPサーバーに接続する](#435-mcpサーバーに接続する)
 - [5. 認可サーバーの主要なエンドポイント](#5-認可サーバーの主要なエンドポイント)
   - [5.1. 認可サーバーメタデータエンドポイント](#51-認可サーバーメタデータエンドポイント)
     - [パスコンポーネントが必要な場合](#パスコンポーネントが必要な場合)
@@ -67,15 +67,101 @@ npm install
 > [!NOTE]
 > デモのためSSL/TLS通信をローカル環境で使用するためのセットアップは実施しません。
 
-## 3. MCP 認可フローの動作確認
+## 3. MCP 認可フロー
 
-### 3.1. ローカルサーバーの起動
+本デモで体験するMCP認可の全体フローです。
+**OAuth 2.1 認可コードフロー** に基づき、MCPクライアントがユーザーの承認を得てアクセストークンを取得し、最終的にMCPサーバー上のリソースを利用するまでの流れを示しています。
+
+```mermaid
+---
+config:
+  theme: default
+---
+sequenceDiagram
+    participant U as ユーザー
+    participant C as MCPクライアント
+    participant AS as 認可サーバー
+    participant MS as MCPサーバー<br/>(リソースサーバー)
+
+    %% Initial MCP Server Access (Authentication Challenge)
+    rect rgb(255, 240, 240)
+        Note over C,MS: 1. 最初のアクセス（認証チャット）
+        C->>MS: POST /mcp (MCPプロトコル)<br/>(Authorizationヘッダーなし)
+        MS-->>C: 401 Unauthorized (認証が必要)<br>WWW-Authenticate: Bearer realm="...",<br>resource_metadata=".../.well-known/oauth-protected-resource/mcp"
+    end
+
+    %% MCP Protected Resource Metadata
+    rect rgb(240, 255, 240)
+        Note over C,MS: 2. サーバーメタデータの取得
+        C->>MS: GET /.well-known/oauth-protected-resource/mcp
+        MS-->>C: 200 {authorization_servers: [認可サーバーURL], resource: "リソースURL",<br/>scopes_supported: ["mcp:tickets:read", ...], ...}
+
+    end
+
+    %% Authorization Server Metadata Discovery
+    rect rgb(240, 240, 255)
+        Note over C,AS: 3. 認可サーバー情報の取得
+        C->>AS: GET /.well-known/oauth-authorization-server
+        AS-->>C: 200 {authorization_endpoint, token_endpoint,<br/>registration_endpoint, introspection_endpoint,<br/>code_challenge_methods_supported: ["S256"], ...}
+    end
+
+    %% Dynamic Client Registration (if needed)
+    rect rgb(255, 255, 240)
+        Note over C,AS: 4. 動的クライアント登録
+        C->>AS: POST /oauth/register {redirect_uris, grant_types, ...}
+        AS-->>C: 201 {client_id, client_secret, ...}
+    end
+
+    %% Authorization (PKCE, two-step with Authlete)
+    rect rgb(250, 240, 255)
+        Note over U,AS: 5. 認可リクエストとユーザー承認 (PKCE)
+        U->>C: サインイン開始 / MCP接続
+        C->>C: コードベリファイア生成 (PKCE)<br/>state, nonce生成
+        C->>AS: GET /oauth/authorize?response_type=code&<br/>client_id, redirect_uri, scope, state, nonce,<br/>code_challenge, code_challenge_method=S256&<br/>resource=..., authorization_details=...
+
+        alt ユーザー未認証
+            AS-->>C: ログイン画面へリダイレクト
+            C->>AS: ログイン情報送信
+            AS-->>C: 同意画面へリダイレクト
+        end
+
+        AS->>U: 同意画面表示<br/>(権限の詳細確認)
+        U-->>AS: 承認ボタン押下
+
+        AS-->>C: 302 リダイレクト (認可コード, state付与)
+    end
+
+    %% Token Request
+    rect rgb(240, 255, 255)
+        Note over C,AS: 6. トークン取得
+        C->>AS: POST /oauth/token<br/>grant_type=authorization_code, code,<br/>redirect_uri, code_verifier, client_id
+        AS-->>C: 200 {access_token, token_type: "Bearer", ...}
+    end
+
+    %% Access MCP Resource
+    rect rgb(255, 250, 240)
+        Note over C,MS: 7. トークンを使用したアクセス
+        C->>MS: POST /mcp (MCPプロトコル)<br/>Authorization: Bearer <access_token>
+
+        Note over MS,AS: トークン検証 (イントロスペクション)
+        MS->>AS: POST /api/introspect<br>token=<access_token>
+        AS-->>MS: 200 {"active": true, "scope": "...", ...}
+        MS->>MS: 権限チェックとツール実行
+        MS-->>C: 200 MCPプロトコルレスポンス
+
+        C->>U: 実行結果表示
+    end
+```
+
+## 4. MCP 認可フローの動作確認
+
+### 4.1. ローカルサーバーの起動
 
 ```bash
 sh ./scripts/launch-local-server.sh
 ```
 
-### 3.2. curlコマンドを使用した動作確認手順
+### 4.2. curlコマンドを使用した動作確認手順
 
 ここでは、ターミナルで `curl` コマンドを使い、実際にサーバーと通信しながら認可の流れを体験します。
 「MCPクライアント」が、まだ権限を持っていない状態からスタートし、最終的に「アクセストークン」を手に入れて「MCPサーバー」の機能を使えるようになるまでのステップを順に追っていきます。
@@ -92,7 +178,7 @@ openssl -v
 # OpenSSL 3.5.0
 ```
 
-#### 3.2.1. 最初のアクセス（Authorizationヘッダーなし）
+#### 4.2.1. 最初のアクセス（Authorizationヘッダーなし）
 
 まずは、**何の権限（アクセストークン）も持たずに** MCPサーバーにアクセスしてみます。
 MCPサーバーが保護されている（誰でもアクセス可能なものではない）場合、サーバーは「誰ですか？権限がありません」と拒否します（HTTP 401 Unauthorized）。
@@ -124,7 +210,7 @@ WWW-Authenticate: Bearer realm="http://localhost:3443", ..., resource_metadata="
 
 ここにある `resource_metadata` のURLが、次のステップへの案内です。
 
-#### 3.2.2. リソースサーバー（MCPサーバー）のメタデータを取得する
+#### 4.2.2. リソースサーバー（MCPサーバー）のメタデータを取得する
 
 前のステップで確認した `resource_metadata` のURLにアクセスして、**このサーバーの詳細情報（メタデータ）** を取得します。
 ここには、「このMCPサーバーを使うためのアクセストークンは、どの認可サーバーで発行できるか」という情報が書かれています。
@@ -154,7 +240,7 @@ curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp
 > 今回のデモでは認可サーバーが一つだけですが、実際には認可サーバーは複数の存在する可能性があります。
 > その場合、MCPクライアントはその中から使用する認可サーバーを選択します。
 
-#### 3.2.3. 認可サーバーのメタデータを取得する
+#### 4.2.3. 認可サーバーのメタデータを取得する
 
 認可サーバーがわかったので、次はその**具体的なエンドポイント**を調べます。
 認可サーバーのURLの後ろに `/.well-known/oauth-authorization-server` を付けたURLにアクセスすると、設定情報が取得できます。
@@ -184,7 +270,7 @@ curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorizati
 }
 ```
 
-#### 3.2.4. クライアントを登録する（動的クライアント登録）
+#### 4.2.4. クライアントを登録する（動的クライアント登録）
 
 認可サーバーを利用するには、まず「私はこういうアプリです」と名乗って登録する必要があります。
 通常は事前に手動登録することもありますが、今回は**その場で自動的に登録する仕組み（動的クライアント登録）** を利用します。
@@ -227,7 +313,7 @@ curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/connect/register \
 CLIENT_ID="YOUR_CLIENT_ID"
 ```
 
-#### 3.2.5. 認可リクエストを実行する（ブラウザでの承認）
+#### 4.2.5. 認可リクエストを実行する（ブラウザでの承認）
 
 ここからはコマンドではなく、**Webブラウザ**を使います。
 ユーザーがログインし、「このアプリに権限を与えてもよい」と承認するプロセスです。
@@ -270,7 +356,7 @@ http://localhost:6274/oauth/callback/debug?state=...&code=MggNs47bcav...&iss=...
 CODE="YOUR_CODE"
 ```
 
-#### 3.2.6. トークンリクエストを実行する
+#### 4.2.6. トークンリクエストを実行する
 
 手に入れた「認可コード」を使って、ついに**アクセストークン**を受け取ります。
 これまで設定してきた変数 `$CODE`、`$CLIENT_ID` を使うので、コマンドの書き換えは不要です。
@@ -303,7 +389,7 @@ curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/token \
 ACCESS_TOKEN="YOUR_ACCESS_TOKEN"
 ```
 
-#### 3.2.7. トークンを使ってMCPサーバーにリクエストする
+#### 4.2.7. トークンを使ってMCPサーバーにリクエストする
 
 最後に、手に入れた「アクセストークン」を使って、最初に拒否されたリクエストにもう一度挑戦します。
 変数 `$ACCESS_TOKEN` をヘッダーに埋め込んで送信します。
@@ -322,7 +408,7 @@ curl -iX POST http://localhost:3443/mcp \
 今度は `401 Unauthorized` ではなく、`202 Accepted`（または `200 OK`）が返ってくるはずです。
 これで、認可された状態で安全にMCPサーバーへアクセスできることが確認できました。
 
-#### 3.2.8. トークンの検証（MCPサーバーの動作確認）
+#### 4.2.8. トークンの検証（MCPサーバーの動作確認）
 
 最後に、**MCPサーバーの視点**で、送られてきたアクセストークンが有効かどうかを検証する手順を確認します。
 本来、この処理は3.2.7のリクエストを受け取ったMCPサーバーが裏側で自動的に行っていますが、ここでは手動でコマンドを実行してその仕組みを体験します。
@@ -359,21 +445,21 @@ curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/introspect \
 }
 ```
 
-### 3.3. MCP Inspectorを使用した動作確認手順
+### 4.3. MCP Inspectorを使用した動作確認手順
 
 ここでは、`curl`コマンドではなく、開発者向けのGUIツールである **MCP Inspector** を使用して、視覚的に認可フローを確認します。
 MCP Inspector は、ブラウザ上で動作するMCPクライアントとして振る舞い、認可フロー（OAuth 2.1）を実行してアクセストークンを取得し、MCPサーバーに接続する一連の流れを自動的に行ってくれます。
 
-#### 3.3.1. MCP Inspectorにアクセスする
+#### 4.3.1. MCP Inspectorにアクセスする
 
-[セクション 3.1.](#31-ローカルサーバーの起動)でローカルサーバーを起動した際に、ターミナルに以下のようなURLが表示されます。
+[セクション 4.1.](#41-ローカルサーバーの起動)でローカルサーバーを起動した際に、ターミナルに以下のようなURLが表示されます。
 このURLをコピーしてブラウザで開いてください。（`MCP_PROXY_AUTH_TOKEN=`以降の値は起動ごとに変わります）
 
 ```bash
 [INSPECT]    http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=xxxxxxxx...
 ```
 
-#### 3.3.2. MCP Inspectorの準備
+#### 4.3.2. MCP Inspectorの準備
 
 MCP Inspectorが開いたら、画面左側の設定パネルを確認します。
 
@@ -382,13 +468,13 @@ MCP Inspectorが開いたら、画面左側の設定パネルを確認します�
 
 ![mcp-inspector1](./docs/images/readme/mcp-inspector-oauth1.png)
 
-#### 3.3.3. 認可設定画面を開く
+#### 4.3.3. 認可設定画面を開く
 
 画面右側のメインエリアにある `Open OAuth Settings` ボタンをクリックします。
 
 ![mcp-inspector3](./docs/images/readme/mcp-inspector-oauth3.png)
 
-#### 3.3.4. 認可フローを実行する
+#### 4.3.4. 認可フローを実行する
 
 設定画面（Authentication Settings）の上部中央にある`Quick OAuth Flow` ボタンをクリックすると、認可フローが開始されます。
 
@@ -405,7 +491,7 @@ MCP Inspectorが開いたら、画面左側の設定パネルを確認します�
 
 ![mcp-inspector5](./docs/images/readme/mcp-inspector-oauth5.png)
 
-#### 3.3.5. MCPサーバーに接続する
+#### 4.3.5. MCPサーバーに接続する
 
 認可フローが完了しアクセストークンが取得できたら、MCPサーバーに接続します。
 画面左側の `Connect` ボタンをクリックしてください。
@@ -417,89 +503,6 @@ MCP Inspectorが開いたら、画面左側の設定パネルを確認します�
 
 画面右側のメインエリアにある `List Tools` ボタンをクリックすると使用可能なツールの一覧が表示され、
 任意のツールを選択して実行することができます。
-
-## 4. MCP 認可フロー
-
-```mermaid
----
-config:
-  theme: default
----
-sequenceDiagram
-    participant U as User
-    participant C as MCP Client
-    participant AS as Authorization Server (AS)
-    participant MS as MCP Server (= Resource Server)<br/>(MCP API + Protected Resources)
-
-    %% Initial MCP Server Access (Authentication Challenge)
-    rect rgb(255, 240, 240)
-        Note over C,MS: Initial MCP Server Access (Authentication Challenge)
-        C->>MS: POST /mcp (MCP Protocol)<br/>(without Authorization header)
-        MS-->>C: 401 Unauthorized<br>WWW-Authenticate: Bearer realm="baseUrl",<br>error="invalid_request",<br>error_description="Access token is required",<br>resource_metadata="baseUrl/.well-known/oauth-protected-resource/mcp"
-    end
-
-    %% MCP Protected Resource Metadata
-    rect rgb(240, 255, 240)
-        Note over C,MS: MCP Protected Resource Metadata Discovery
-        C->>MS: GET /.well-known/oauth-protected-resource/mcp
-        MS-->>C: 200 {authorization_servers: [baseUrl], resource: "baseUrl/mcp",<br/>scopes_supported: ["mcp:tickets:read", "mcp:tickets:write"], ...}
-
-    end
-
-    %% Authorization Server Metadata Discovery
-    rect rgb(240, 240, 255)
-        Note over C,AS: Authorization Server Metadata Discovery
-        C->>AS: GET /.well-known/oauth-authorization-server
-        AS-->>C: 200 {authorization_endpoint, token_endpoint,<br/>registration_endpoint, introspection_endpoint,<br/>code_challenge_methods_supported: ["S256"], ...}
-    end
-
-    %% Dynamic Client Registration (if needed)
-    rect rgb(255, 255, 240)
-        Note over C,AS: Dynamic Client Registration (RFC 7591)
-        C->>AS: POST /oauth/register {redirect_uris, grant_types, response_types,<br/>client_name, token_endpoint_auth_method, ...}
-        AS-->>C: 201 {client_id, client_secret, registration_access_token, ...}
-    end
-
-    %% Authorization (PKCE, two-step with Authlete)
-    rect rgb(250, 240, 255)
-        Note over U,AS: OAuth 2.1 Authorization Code + PKCE Flow
-        U->>C: Start sign-in / connect MCP
-        C->>C: Generate code_verifier / code_challenge=S256(...)<br/>state, nonce
-        C->>AS: GET /oauth/authorize?response_type=code&<br/>client_id, redirect_uri, scope=mcp:tickets:read&state, nonce,<br/>code_challenge, code_challenge_method=S256&<br/>resource=https://localhost:3443/mcp&<br/>authorization_details=[{type:"ticket-reservation"}]
-
-        alt User not authenticated
-            AS-->>C: 302 /auth/login?return_to=/oauth/authorize/consent
-            C->>AS: Login credentials (Passport.js)
-            AS-->>C: 302 /oauth/authorize/consent
-        end
-
-        AS->>U: Consent UI with authorization details options<br/>(standard vs custom limits)
-        U-->>AS: POST /oauth/authorize/decision<br/>{authorized: true, authorizationDetailsJson}
-
-        AS-->>C: 302 redirect_uri?code=...&state=...
-    end
-
-    %% Token Request
-    rect rgb(240, 255, 255)
-        Note over C,AS: Token Request
-        C->>AS: POST /oauth/token<br/>grant_type=authorization_code, code,<br/>redirect_uri, code_verifier, client_id, client_secret
-        AS-->>C: 200 {access_token, token_type: "Bearer",<br/>refresh_token?, expires_in, scope, ...}
-    end
-
-    %% Access MCP Resource
-    rect rgb(255, 250, 240)
-        Note over C,MS: MCP Protocol with OAuth Protection
-        C->>MS: POST /mcp (MCP Protocol)<br/>Authorization: Bearer <access_token>
-
-        Note over MS,AS: Token Validation
-        MS->>AS: POST /api/introspect<br>Authorization: Basic abcdefg==<br>token=<access_token>
-        AS-->>MS: 200 {"active", "scope", "token_type": "Bearer", <br>"exp", "sub", "aud", "iss", "auth_time"}
-        MS->>MS: Verify accessTokenResources matches MCP endpoint<br/>Execute MCP tool with authorization details constraints<br/>(e.g., maxAmount limit for ticket reservations)
-        MS-->>C: 200 MCP Protocol Response
-
-        C->>U: Show results
-    end
-```
 
 ## 5. 認可サーバーの主要なエンドポイント
 
