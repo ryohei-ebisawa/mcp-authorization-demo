@@ -85,9 +85,9 @@ sequenceDiagram
 
     %% Initial MCP Server Access (Authentication Challenge)
     rect rgb(255, 240, 240)
-        Note over C,MS: 1. 最初のアクセス（認証チャット）
+        Note over C,MS: 1. 最初のアクセス
         C->>MS: POST /mcp (MCPプロトコル)<br/>(Authorizationヘッダーなし)
-        MS-->>C: 401 Unauthorized (認証が必要)<br>WWW-Authenticate: Bearer realm="...",<br>resource_metadata=".../.well-known/oauth-protected-resource/mcp"
+        MS-->>C: 401 Unauthorized (認可が必要)<br>WWW-Authenticate: Bearer realm="...",<br>resource_metadata=".../.well-known/oauth-protected-resource/mcp"
     end
 
     %% MCP Protected Resource Metadata
@@ -114,7 +114,7 @@ sequenceDiagram
 
     %% Authorization (PKCE, two-step with Authlete)
     rect rgb(250, 240, 255)
-        Note over U,AS: 5. 認可リクエストとユーザー承認 (PKCE)
+        Note over U,AS: 5. 認可リクエストとユーザー承認
         U->>C: サインイン開始 / MCP接続
         C->>C: コードベリファイア生成 (PKCE)<br/>state, nonce生成
         C->>AS: GET /oauth/authorize?response_type=code&<br/>client_id, redirect_uri, scope, state, nonce,<br/>code_challenge, code_challenge_method=S256&<br/>resource=..., authorization_details=...
