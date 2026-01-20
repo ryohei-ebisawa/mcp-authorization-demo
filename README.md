@@ -319,6 +319,9 @@ curl -iX POST http://localhost:3443/mcp \
     -d '{"method":"notifications/initialized","jsonrpc":"2.0"}'
 ```
 
+今度は `401 Unauthorized` ではなく、`202 Accepted`（または `200 OK`）が返ってくるはずです。
+これで、認可された状態で安全にMCPサーバーへアクセスできることが確認できました。
+
 #### 3.2.8. トークンの検証（MCPサーバーの動作確認）
 
 最後に、**MCPサーバーの視点**で、送られてきたアクセストークンが有効かどうかを検証する手順を確認します。
@@ -355,9 +358,6 @@ curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/introspect \
   "iss": "https://vc-issuer.g-trustedweb.workers.dev"
 }
 ```
-
-今度は `401 Unauthorized` ではなく、`202 Accepted`（または `200 OK`）が返ってくるはずです。
-これで、認可された状態で安全にMCPサーバーへアクセスできることが確認できました。
 
 ### 3.3. MCP Inspectorを使用した動作確認手順
 
