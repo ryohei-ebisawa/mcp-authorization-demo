@@ -20,6 +20,12 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
     - [3.2.5. 認可リクエストを実行する（ブラウザでの承認）](#325-認可リクエストを実行するブラウザでの承認)
     - [3.2.6. トークンリクエストを実行する](#326-トークンリクエストを実行する)
     - [3.2.7. トークンを使ってMCPサーバーにリクエストする](#327-トークンを使ってmcpサーバーにリクエストする)
+  - [3.3. MCP Inspectorを使用した動作確認手順](#33-mcp-inspectorを使用した動作確認手順)
+    - [3.3.1. MCP Inspectorにアクセスする](#331-mcp-inspectorにアクセスする)
+    - [3.3.2. MCP Inspectorの準備](#332-mcp-inspectorの準備)
+    - [3.3.3. 認可設定画面を開く](#333-認可設定画面を開く)
+    - [3.3.4. 認可フローを実行する](#334-認可フローを実行する)
+    - [3.3.5. MCPサーバーに接続する](#335-mcpサーバーに接続する)
 - [4. MCP 認可フロー](#4-mcp-認可フロー)
 - [5. 認可サーバーの主要なエンドポイント](#5-認可サーバーの主要なエンドポイント)
   - [5.1. 認可サーバーメタデータエンドポイント](#51-認可サーバーメタデータエンドポイント)
@@ -316,6 +322,65 @@ curl -iX POST http://localhost:3443/mcp \
 
 今度は `401 Unauthorized` ではなく、`202 Accepted`（または `200 OK`）が返ってくるはずです。
 これで、認可された状態で安全にMCPサーバーへアクセスできることが確認できました。
+
+### 3.3. MCP Inspectorを使用した動作確認手順
+
+ここでは、`curl`コマンドではなく、開発者向けのGUIツールである **MCP Inspector** を使用して、視覚的に認可フローを確認します。
+MCP Inspector は、ブラウザ上で動作するMCPクライアントとして振る舞い、認可フロー（OAuth 2.1）を実行してアクセストークンを取得し、MCPサーバーに接続する一連の流れを自動的に行ってくれます。
+
+#### 3.3.1. MCP Inspectorにアクセスする
+
+[セクション 3.1.](#31-ローカルサーバーの起動)でローカルサーバーを起動した際に、ターミナルに以下のようなURLが表示されます。
+このURLをコピーしてブラウザで開いてください。（`MCP_PROXY_AUTH_TOKEN=`以降の値は起動ごとに変わります）
+
+```bash
+[INSPECT]    http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=xxxxxxxx...
+```
+
+#### 3.3.2. MCP Inspectorの準備
+
+MCP Inspectorが開いたら、画面左側の設定パネルを確認します。
+
+1.  **Transport Type**: `Streamable HTTP` を選択してください。
+2.  **URL**: `http://localhost:3443/mcp` になっていることを確認してください。
+
+![mcp-inspector1](./docs/images/readme/mcp-inspector-oauth1.png)
+
+#### 3.3.3. 認可設定画面を開く
+
+画面右側のメインエリアにある `Open OAuth Settings` ボタンをクリックします。
+
+![mcp-inspector3](./docs/images/readme/mcp-inspector-oauth3.png)
+
+#### 3.3.4. 認可フローを実行する
+
+設定画面（Authentication Settings）の上部中央にある`Quick OAuth Flow` ボタンをクリックすると、認可フローが開始されます。
+
+![mcp-inspector4](./docs/images/readme/mcp-inspector-oauth4.png)
+
+自動的に認可サーバーの同意画面に遷移します。
+以下のデモ用アカウントでログインし、承認を行ってください。
+
+- **ID**: `inga`
+- **PW**: `inga`
+
+承認が完了するとポップアップが閉じ、元の画面に戻ります。
+画面下部の `OAuth Flow Progress` セクションで、各ステップ（メタデータ取得、クライアント登録、認可リクエスト、トークン取得）が成功したことを確認できます。
+
+![mcp-inspector5](./docs/images/readme/mcp-inspector-oauth5.png)
+
+#### 3.3.5. MCPサーバーに接続する
+
+認可フローが完了しアクセストークンが取得できたら、MCPサーバーに接続します。
+画面左側の `Connect` ボタンをクリックしてください。
+
+発行されたアクセストークンを使ってMCPサーバーへの接続が行われます。
+`Connect`ボタンの下のエリアに表示されているステータスが`Connected`になっていれば成功です。
+
+![mcp-inspector8](./docs/images/readme/mcp-inspector-oauth8.png)
+
+画面右側のメインエリアにある `List Tools` ボタンをクリックすると使用可能なツールの一覧が表示され、
+任意のツールを選択して実行することができます。
 
 ## 4. MCP 認可フロー
 
