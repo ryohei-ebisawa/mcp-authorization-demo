@@ -15,6 +15,9 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
     - [3.2.2. リソースサーバー（ = MCPサーバー）のメタデータを取得する](#322-リソースサーバー--mcpサーバーのメタデータを取得する)
     - [3.2.3. 認可サーバーのメタデータを取得する](#323-認可サーバーのメタデータを取得する)
     - [3.2.4. クライアントを登録する](#324-クライアントを登録する)
+    - [3.2.5. 認可リクエストを実行する](#325-認可リクエストを実行する)
+    - [3.2.6 トークンリクエストを実行する](#326-トークンリクエストを実行する)
+    - [3.2.7 Authorizationヘッダーを用いてMCPサーバーにリクエストする](#327-authorizationヘッダーを用いてmcpサーバーにリクエストする)
 - [4. MCP 認可フロー](#4-mcp-認可フロー)
 - [5. 認可サーバーの主要なエンドポイント](#5-認可サーバーの主要なエンドポイント)
   - [5.1 認可サーバーメタデータエンドポイント](#51-認可サーバーメタデータエンドポイント)
@@ -292,7 +295,20 @@ alt-svc: h3=":443"; ma=86400
 }
 ```
 
-5. 作成されたクライアントの`client_id`を使用してブラウザで認可リクエストする。（`client_id`は適宜書き換える。）
+#### 3.2.5. 認可リクエストを実行する
+
+ブラウザを用いて認可リクエストを実行します。認可エンドポイントのURLは認可サーバーのメタデータの`authorization_endpoint`から取得したものを使用します。また、`client_id`は先ほど作成したクライアントの`client_id`を使用します。認可リクエストのクエリパラメータには次の値を含めて下さい。`resource`パラメータはアクセスしたいMCPサーバーのURLです。`resource`パラメータは必ずリクエストに含める必要があります。
+
+- response_type: code
+- client_id: 先ほど作成したクライアントの`client_id`
+- code_challenge: ランダムな値のハッシュ値をBase64URLでエンコードしたもの（アルゴリズムはSHA-256）
+- code_challenge_method: S256
+- redirect_uri: http://localhost:6274/oauth/callback/debug
+- state: ランダムな値
+- scope: mcp:tickets:read mcp:tickets:write
+- resource: http://localhost:3443/mcp
+
+実際のURLは下記のようになります。URLにアクセスすると同意画面が表示されます。
 
 ```bash
 # リクエストURL
@@ -300,21 +316,28 @@ alt-svc: h3=":443"; ma=86400
 https://vc-issuer.g-trustedweb.workers.dev/api/authorization?response_type=code&client_id=1687054126&code_challenge=Skniu4mLy-GJhZzvSmLQpxDLGa_eSwW_cayjPqYSAaw&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&state=90a927408e0065c96358550992ed9ddee5fd796abef051060617560da32ab6a4&scope=mcp%3Atickets%3Aread+mcp%3Atickets%3Awrite&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp
 ```
 
+同意画面にて、以下の認証情報を入力して`Authorize`ボタンをクリックして下さい。
+
+ID: `inga`
+PW: `inga`
+
+認証に成功すると、以下のようなURLにリダイレクトされます。
+URLの`code`クエリパラメータから認可コードを取得することができます。（このデモでは、認可コードを画面にも表示していますのでそちらからも取得できます。）
+
 ```bash
 # コールバックURL
 http://localhost:6274/oauth/callback/debug?state=90a927408e0065c96358550992ed9ddee5fd796abef051060617560da32ab6a4&code=MggNs47bcav_X55Ck8yBjLJ5RQqaLDAWMrRG_e0F4uI&iss=https%3A%2F%2Fvc-issuer.g-trustedweb.workers.dev
 ```
 
-認可リクエストに成功すると上記のようなURLにリダイレクトし、クエリパラメータから認可コードが取得できます。
+#### 3.2.6 トークンリクエストを実行する
 
-6. 取得した認可コードを用いてトークンリクエストをする。（`client_id`は適宜書き換える。）
+認可リクエストの結果として取得した認可コードを用いて認可サーバーにトークンリクエストを行います。また、`client_id`は先ほど作成したクライアントの`client_id`を使用します。`resource`パラメータには認可リクエストで指定したものと同じMCPサーバーのURLを指定して下さい。
 
 ```bash
 # リクエスト
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "grant_type=authorization_code&code=MggNs47bcav_X55Ck8yBjLJ5RQqaLDAWMrRG_e0F4uI&code_verifier=bgQH5h5Aizcmvw98iJUVeiXhkzKa_oz8nJ8Y_JodWXM&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp&client_id=1687054126"
-
 ```
 
 ```bash
@@ -337,9 +360,21 @@ alt-svc: h3=":443"; ma=86400
 {"access_token":"IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU","token_type":"Bearer","expires_in":86400,"scope":"mcp:tickets:read mcp:tickets:write","refresh_token":"quiRRKL1NWotRSJOYpegKPZQn5_G6NezhRFIJKGcrJs"}
 ```
 
-7. 発行されたアクセストークンをAuthoriztionヘッダーに設定してMCPサーバーにリクエストする。
+レスポンスボディはJSON形式になっており、ここからアクセストークンが取得できます。
 
-リクエスト例：
+```json
+{
+  "access_token": "IU7JGeoJxJSGfAY7nT9A-kK4GAGQgenvHtaRbaUcwoU",
+  "token_type": "Bearer",
+  "expires_in": 86400,
+  "scope": "mcp:tickets:read mcp:tickets:write",
+  "refresh_token": "quiRRKL1NWotRSJOYpegKPZQn5_G6NezhRFIJKGcrJs"
+}
+```
+
+#### 3.2.7 Authorizationヘッダーを用いてMCPサーバーにリクエストする
+
+先ほど発行したアクセストークンをAuthorizationヘッダーに設定して再度MCPサーバーへのリクエストを試みます。Authorizationヘッダーを用いずにリクエストした際には`401 UnAuthorized`レスポンスがMCPサーバーから返されましたが、今回は`202 Accepted`レスポンスが返されます。無事にMCPサーバーへリクエストできました。
 
 ```bash
 # リクエスト
@@ -372,8 +407,6 @@ Connection: keep-alive
 Keep-Alive: timeout=5
 Transfer-Encoding: chunked
 ```
-
-無事MCPサーバーにアクセスできました。
 
 ## 4. MCP 認可フロー
 
