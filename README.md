@@ -377,8 +377,8 @@ MCP Inspector は、ブラウザ上で動作するMCPクライアントとして
 
 MCP Inspectorが開いたら、画面左側の設定パネルを確認します。
 
-1.  **Transport Type**: `Streamable HTTP` を選択してください。
-2.  **URL**: `http://localhost:3443/mcp` になっていることを確認してください。
+1. **Transport Type**: `Streamable HTTP` を選択してください。
+2. **URL**: `http://localhost:3443/mcp` になっていることを確認してください。
 
 ![mcp-inspector1](./docs/images/readme/mcp-inspector-oauth1.png)
 
@@ -543,8 +543,8 @@ OAuth 2.1（[draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/dra
 
 MCPの文脈では、以下のパラメータが特に重要です。
 
-- **`authorization_details`**: **Rich Authorization Requests (RAR)** と呼ばれる仕組みで、「チケット予約の金額上限は10,000円まで」のような、構造化された詳細な権限を要求するために使います。
 - **`resource`**: どのMCPサーバー（リソースサーバー）にアクセスしたいかを指定します。
+- **`code_challenge` / `code_challenge_method`**: **PKCE (Proof Key for Code Exchange)** のためのパラメータです。MCPの仕様では、認可コード横領攻撃を防ぐためにPKCEの実装が**必須**となっており、`S256`（SHA-256）方式の使用が求められます。
 
 ### 5.4. トークンエンドポイント
 
