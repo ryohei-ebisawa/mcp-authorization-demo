@@ -20,6 +20,7 @@ Authlete をバックエンドに利用した認可サーバーと連携し、�
     - [3.2.5. 認可リクエストを実行する（ブラウザでの承認）](#325-認可リクエストを実行するブラウザでの承認)
     - [3.2.6. トークンリクエストを実行する](#326-トークンリクエストを実行する)
     - [3.2.7. トークンを使ってMCPサーバーにリクエストする](#327-トークンを使ってmcpサーバーにリクエストする)
+    - [3.2.8. トークンの検証（MCPサーバーの動作確認）](#328-トークンの検証mcpサーバーの動作確認)
   - [3.3. MCP Inspectorを使用した動作確認手順](#33-mcp-inspectorを使用した動作確認手順)
     - [3.3.1. MCP Inspectorにアクセスする](#331-mcp-inspectorにアクセスする)
     - [3.3.2. MCP Inspectorの準備](#332-mcp-inspectorの準備)
@@ -318,7 +319,42 @@ curl -iX POST http://localhost:3443/mcp \
     -d '{"method":"notifications/initialized","jsonrpc":"2.0"}'
 ```
 
+#### 3.2.8. トークンの検証（MCPサーバーの動作確認）
+
+最後に、**MCPサーバーの視点**で、送られてきたアクセストークンが有効かどうかを検証する手順を確認します。
+本来、この処理は3.2.7のリクエストを受け取ったMCPサーバーが裏側で自動的に行っていますが、ここでは手動でコマンドを実行してその仕組みを体験します。
+
+MCPサーバーは、認可サーバーの「イントロスペクションエンドポイント」にトークンを送り、その有効性を問い合わせます。
+
+**実行するコマンド:**
+
+```bash
+# リクエスト
+curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/introspect \
+    -u "mcp-server:mcp-server-secret" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "token=$ACCESS_TOKEN"
+```
+
 **結果の確認:**
+
+レスポンス（JSON）の `active` プロパティを確認します。
+`true` であれば、このトークンは有効であり、MCPサーバーはクライアントからのリクエストを受け入れます。
+また、トークンに紐付いている権限（`scope`）や有効期限（`exp`）などの詳細情報も確認できます。
+
+```json
+{
+  "active": true,
+  "scope": "mcp:tickets:read mcp:tickets:write",
+  "client_id": "...",
+  "token_type": "Bearer",
+  "exp": 1737013895,
+  "iat": 1737010295,
+  "sub": "1004",
+  "aud": ["http://localhost:3443/mcp"],
+  "iss": "https://vc-issuer.g-trustedweb.workers.dev"
+}
+```
 
 今度は `401 Unauthorized` ではなく、`202 Accepted`（または `200 OK`）が返ってくるはずです。
 これで、認可された状態で安全にMCPサーバーへアクセスできることが確認できました。
