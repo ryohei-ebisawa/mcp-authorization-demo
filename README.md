@@ -374,19 +374,25 @@ sequenceDiagram
 
 ## 5. 認可サーバーの主要なエンドポイント
 
+ここでは、MCP 認可フローで登場する認可サーバーの主要なエンドポイントについて解説します。
+
 ### 5.1 認可サーバーメタデータエンドポイント
 
 認可サーバーの設定情報（メタデータ）をJSON形式で公開するエンドポイントです。
-[RFC8414](https://datatracker.ietf.org/doc/html/rfc8414)（OAuth 2.0 Authorization Server Metadata）および、[OpenID Connect Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0.html)で仕様が定義されています。
-メタデータは`/.well-known/oauth-authorization-server` や `/.well-known/openid-configuration` というWell-Known URIを利用して公開されます。
+クライアントは、まずこのエンドポイントにアクセスして、「どこに認可リクエストを送ればいいか」「どの署名アルゴリズムが使えるか」などの情報を取得します。
 
-MCPクライアントは、以下の順にリクエストを行いメタデータが取得できるか試みます。
+[RFC8414](https://datatracker.ietf.org/doc/html/rfc8414)（OAuth 2.0 Authorization Server Metadata）および、[OpenID Connect Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0.html)で仕様が定義されています。
+メタデータは`/.well-known/oauth-authorization-server` や `/.well-known/openid-configuration` という決まったパスで公開されます。
+
+MCPクライアントは、以下の順にリクエストを行い、最初に見つかったメタデータを使用します。
 
 #### パスコンポーネントが必要な場合
 
-1. OAuth 2.0 Authorization Server Metadata with path insertion: `https://example.com/.well-known/oauth-authorization-server/**path**`
-2. OpenID Connect Discovery 1.0 with path insertion: `https://example.com/.well-known/openid-configuration/**path**`
-3. OpenID Connect Discovery 1.0 with path appending: `https://example.com/**path**/.well-known/openid-configuration`
+（例：`https://example.com/tenant-a` のようなテナント別のURLの場合）
+
+1. OAuth 2.0 Authorization Server Metadata: `https://example.com/.well-known/oauth-authorization-server/tenant-a`
+2. OpenID Connect Discovery 1.0 (path insertion): `https://example.com/.well-known/openid-configuration/tenant-a`
+3. OpenID Connect Discovery 1.0 (path appending): `https://example.com/tenant-a/.well-known/openid-configuration`
 
 #### パスコンポーネントが不要な場合
 
@@ -395,27 +401,38 @@ MCPクライアントは、以下の順にリクエストを行いメタデー�
 
 ### 5.2 動的クライアント登録エンドポイント
 
-OAuth クライアント（アプリケーション）が、自身のメタデータ（リダイレクト URI、アプリ名、ロゴの URL など）を送信し、動的にクライアント登録を行うためのエンドポイントです。[RFC7591](https://datatracker.ietf.org/doc/html/rfc7591)で仕様が定義されています。
-成功すると、認可サーバーから一意のクライアント ID（および必要に応じてクライアントシークレット）や登録メタデータが返却されます。
+クライアント（アプリケーション）が、自分自身の情報を登録するためのエンドポイントです。
+[RFC7591](https://datatracker.ietf.org/doc/html/rfc7591)で仕様が定義されています。
 
-多くの場合、MCPクライアントは事前にMCPサーバーの認可サーバーについての情報を持っておらず、また手動での登録作業はユーザーにとって抵抗があります。
-動的クライアント登録の仕組みを利用することでMCPクライアントは新たなMCPサーバーおよびその認可サーバーとシームレスに接続することが可能になります。
+通常、OAuthクライアントを利用するには事前の登録が必要ですが、MCPのように「ユーザーが任意のサーバーに接続したい」という場面では、事前に全てのクライアントを登録しておくことは不可能です。
+そこで、接続時に動的にクライアント登録を行うことで、シームレスな利用を実現します。成功すると、一意のクライアントIDが発行されます。
 
 ### 5.3 認可エンドポイント
 
-リソースオーナー（エンドユーザー）が認証を行い、クライアントへのアクセス権限の付与（認可）を承認するためのエンドポイントです。OAuth2.1（[draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13)）で仕様が定義されています。
-本プロジェクトでは、標準的なスコープに加え、**Rich Authorization Requests (RAR)** を利用して構造化された詳細な権限（例：「チケット予約」の「金額上限」など）を `authorization_details` パラメータで要求します。また、`resource` パラメータで使用する MCP サーバーを特定する必要があります。
+ユーザー（リソースオーナー）が、「このアプリに権限を与えてもよいか」を確認し、承認するためのエンドポイントです。
+OAuth 2.1（[draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13)）で仕様が定義されています。
+
+MCPの文脈では、以下のパラメータが特に重要です。
+
+- **`authorization_details`**: **Rich Authorization Requests (RAR)** と呼ばれる仕組みで、「チケット予約の金額上限は10,000円まで」のような、構造化された詳細な権限を要求するために使います。
+- **`resource`**: どのMCPサーバー（リソースサーバー）にアクセスしたいかを指定します。
 
 ### 5.4 トークンエンドポイント
 
-クライアントがアクセストークンを取得するために使用するエンドポイントです。OAuth2.1（[draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13)）で仕様が定義されています。
-認可エンドポイントで取得した「認可コード」をこのエンドポイントに送信し、引き換えに「アクセストークン」（および ID トークン、リフレッシュトークン）を受け取ります。また、リクエスト時には`resource` パラメータで使用する MCP サーバーを特定する必要があります。（`resource`パラメータの値は認可エンドポイントにリクエストする際と同じです。）
+認可コードをアクセストークンと交換するためのエンドポイントです。
+OAuth 2.1（[draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13)）で仕様が定義されています。
+
+クライアントは、認可エンドポイントで取得した「認可コード」と、PKCE用の「Code Verifier」などを送信し、アクセストークンを取得します。
+また、ここでも `resource` パラメータを指定して、特定のMCPサーバー向けのトークンであることを明示する必要があります。
 
 ### 5.5 イントロスペクションエンドポイント
 
-リソースサーバー（MCP サーバー）が、提示されたアクセストークンの有効性やメタデータを確認するために使用するエンドポイントです。[RFC7662](https://datatracker.ietf.org/doc/html/rfc7662)で仕様が定義されています。
-MCP サーバーはMCPクライアントから受け取ったアクセストークンが有効なものであるかを検証する必要があります。
-アクセストークンにはリファレンストークンと自己エンコードトークンの２種類があり、リファレンストークンの場合はトークン自体に有効性を確認する機能が存在せず、本エンドポイントを利用することでトークンの有効性を検証することができます。
+トークンの有効性や内容を検証するためのエンドポイントです。
+[RFC7662](https://datatracker.ietf.org/doc/html/rfc7662)で仕様が定義されています。
+
+これは主に**MCPサーバー（リソースサーバー）が使用します**。
+MCPサーバーは、クライアントから送られてきたアクセストークンが本物かどうか、期限切れではないか、どのような権限（スコープ）を持っているかを、このエンドポイントに問い合わせて確認します。
+これにより、トークン自体に情報を詰め込まない「リファレンストークン」形式でも安全に検証が可能になります。
 
 ## 6. Authleteコンソール上での各エンドポイントの設定例
 
