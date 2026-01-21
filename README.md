@@ -428,7 +428,6 @@ MCPサーバーは、認可サーバーの「イントロスペクションエ�
 **実行するコマンド:**
 
 ```bash
-# リクエスト
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/introspect \
     -u "mcp-server:mcp-server-secret" \
     -H "Content-Type: application/x-www-form-urlencoded" \
