@@ -328,8 +328,17 @@ CODE_VERIFIER=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=')
 # Code Challenge (Verifierのハッシュ値) の生成
 CODE_CHALLENGE=$(echo -n "$CODE_VERIFIER" | openssl sha256 -binary | openssl base64 | tr '+/' '-_' | tr -d '=')
 
-# 認可リクエスト用URLを表示します
-echo "https://vc-issuer.g-trustedweb.workers.dev/api/authorization?response_type=code&client_id=$CLIENT_ID&code_challenge=$CODE_CHALLENGE&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A9999%2Foauth%2Fcallback%2Fdebug&state=random_state_value&scope=mcp%3Atickets%3Aread+mcp%3Atickets%3Awrite&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp"
+# 認可リクエスト用URLを生成して表示します
+AUTH_URL="https://vc-issuer.g-trustedweb.workers.dev/api/authorization"
+AUTH_PARAMS="response_type=code"
+AUTH_PARAMS="$AUTH_PARAMS&client_id=$CLIENT_ID"
+AUTH_PARAMS="$AUTH_PARAMS&code_challenge=$CODE_CHALLENGE"
+AUTH_PARAMS="$AUTH_PARAMS&code_challenge_method=S256"
+AUTH_PARAMS="$AUTH_PARAMS&redirect_uri=http%3A%2F%2Flocalhost%3A9999%2Foauth%2Fcallback%2Fdebug"
+AUTH_PARAMS="$AUTH_PARAMS&state=random_state_value"
+AUTH_PARAMS="$AUTH_PARAMS&scope=mcp%3Atickets%3Aread+mcp%3Atickets%3Awrite"
+AUTH_PARAMS="$AUTH_PARAMS&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp"
+echo "$AUTH_URL?$AUTH_PARAMS"
 ```
 
 **ブラウザでの操作:**
