@@ -41,25 +41,7 @@ Authlete を認可サーバーに利用しています。
 
 - チケット販売Webアプリケーション - Express.js + Passport.js
 - MCP サーバー - OAuth 保護されたチケット操作API
-- OAuth 2.1 認可サーバー - [au3te-ts-hono](https://github.com/dentsusoken/au3te-ts-hono)を利用（本プロジェクトには含まれていません。別途構築してください。）
-
-## 2. ローカル環境構築
-
-### 2.1. リポジトリのクローン
-
-```bash
-git clone https://github.com/ryohei-ebisawa/mcp-authorization-demo.git
-cd mcp-authorization-demo
-```
-
-### 2.2. 依存パッケージのインストール
-
-```bash
-npm install
-```
-
-> [!NOTE]
-> デモのためSSL/TLS通信をローカル環境で使用するためのセットアップは実施しません。
+- OAuth 2.1 認可サーバー - https://vc-issuer.g-trustedweb.workers.dev
 
 ## 3. MCP 認可フロー
 
