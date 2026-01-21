@@ -146,14 +146,14 @@ sh ./scripts/launch-local-server.sh
 
 この手順では、`curl`コマンドおよび`openssl`コマンドを使用します。
 それぞれのコマンドがインストールされていない場合は、インストールしてください。
-以下のコマンドでインストール済みかを確認できます。(インストール済みの場合は各コマンドのバージョンが表示されます。)
+以下のコマンドでインストール済みかを確認できます。インストール済みの場合は各コマンドのバージョンが表示されます。
 
 ```bash
 curl -V
-# curl 8.7.1
+```
 
+```bash
 openssl -v
-# OpenSSL 3.5.0
 ```
 
 #### 4.2.1. 最初のアクセス（Authorizationヘッダーなし）
@@ -167,7 +167,6 @@ MCPサーバーが保護されている場合、サーバーは「誰ですか�
 **実行するコマンド:**
 
 ```bash
-# リクエスト
 curl -iX POST http://localhost:3443/mcp \
     -H "Accept: application/json, text/event-stream" \
     -H "Content-Type: application/json" \
@@ -199,7 +198,6 @@ WWW-Authenticate: Bearer realm="http://localhost:3443", ...,
 **実行するコマンド:**
 
 ```bash
-# リクエスト
 curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp
 ```
 
@@ -215,7 +213,7 @@ curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp
 }
 ```
 
-このURL（`https://vc-issuer.g-trustedweb.workers.dev`）が、今回利用する**認可サーバー**です。
+このURL（`https://vc-issuer.g-trustedweb.workers.dev`）が、今回使用する**認可サーバー**です。
 
 
 #### 4.2.3. 認可サーバーのメタデータを取得する
@@ -226,7 +224,6 @@ curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp
 **実行するコマンド:**
 
 ```bash
-# リクエスト
 curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorization-server
 ```
 
@@ -259,7 +256,6 @@ MCPクライアントは、事前に手動登録できないことも多いた�
 **実行するコマンド:**
 
 ```bash
-# リクエスト
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/connect/register \
     -H "Content-Type: application/json" \
     -d '{
@@ -288,7 +284,6 @@ curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/connect/register \
 この `client_id`の値 （例：`1687054126`）をコピーして、変数 `CLIENT_ID` に設定します。
 
 ```bash
-# 【入力】レスポンスの client_id の値をセットします
 CLIENT_ID="YOUR_CLIENT_ID"
 ```
 
