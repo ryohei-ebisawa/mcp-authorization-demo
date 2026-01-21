@@ -365,7 +365,6 @@ http://localhost:9999/oauth/callback/debug?state=...&code=MggNs47bcav...&iss=...
 この `code` の値（`&`の前まで）をコピーして、変数 `CODE` に設定します。
 
 ```bash
-# 【入力】ブラウザで取得した認可コードをセットします
 CODE="YOUR_CODE"
 ```
 
@@ -377,7 +376,6 @@ CODE="YOUR_CODE"
 **実行するコマンド:**
 
 ```bash
-# リクエスト
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "grant_type=authorization_code" \
@@ -403,7 +401,6 @@ curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/token \
 このトークン（例：`IU7JGeo...`）をコピーして、変数 `ACCESS_TOKEN` に設定します。
 
 ```bash
-# 【入力】レスポンスの access_token の値をセットします
 ACCESS_TOKEN="YOUR_ACCESS_TOKEN"
 ```
 
@@ -415,7 +412,6 @@ ACCESS_TOKEN="YOUR_ACCESS_TOKEN"
 **実行するコマンド:**
 
 ```bash
-# リクエスト
 curl -iX POST http://localhost:3443/mcp \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Accept: application/json, text/event-stream" \
@@ -425,6 +421,30 @@ curl -iX POST http://localhost:3443/mcp \
 
 今度は `401 Unauthorized` ではなく、`202 Accepted`（または `200 OK`）が返ってくるはずです。
 これで、認可された状態でMCPサーバーへアクセスできることが確認できました。
+
+**実行結果:**
+
+```bash
+HTTP/1.1 202 Accepted
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Origin-Agent-Cluster: ?1
+Referrer-Policy: no-referrer
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 0
+Vary: Origin
+Access-Control-Allow-Credentials: true
+content-type: text/plain; charset=UTF-8
+Date: Wed, 21 Jan 2026 03:45:39 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+```
 
 #### 4.2.8. トークンの検証（MCPサーバーの動作確認）
 
