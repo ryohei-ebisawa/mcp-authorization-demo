@@ -157,7 +157,7 @@ sequenceDiagram
 
 前述のフロー図で示した流れを、実際に手を動かして確認してみましょう。
 
-### 4.1. ローカルサーバーの起動
+### 4.1. ローカルMCPサーバーの起動
 
 ```bash
 sh ./scripts/launch-local-server.sh
@@ -168,8 +168,8 @@ sh ./scripts/launch-local-server.sh
 ここでは、ターミナルで `curl` コマンドを使い、実際にサーバーと通信しながら認可の流れを体験します。
 「MCPクライアント」が、まだ権限を持っていない状態からスタートし、最終的に「アクセストークン」を手に入れて「MCPサーバー」の機能を使えるようになるまでのステップを順に追っていきます。
 
-この手順では、`curl`コマンドおよび`openssl`コマンドを使用します。  
-それぞれのコマンドがインストールされていない場合は、インストールしてください。  
+この手順では、`curl`コマンドおよび`openssl`コマンドを使用します。
+それぞれのコマンドがインストールされていない場合は、インストールしてください。
 以下のコマンドでインストール済みかを確認できます。(インストール済みの場合は各コマンドのバージョンが表示されます。)
 
 ```bash
@@ -183,7 +183,7 @@ openssl -v
 #### 4.2.1. 最初のアクセス（Authorizationヘッダーなし）
 
 まずは、**何の権限（アクセストークン）も持たずに** MCPサーバーにアクセスしてみます。
-MCPサーバーが保護されている（誰でもアクセス可能なものではない）場合、サーバーは「誰ですか？権限がありません」と拒否します（HTTP 401 Unauthorized）。
+MCPサーバーが保護されている場合、サーバーは「誰ですか？権限がありません」と拒否します（HTTP 401 Unauthorized）。
 
 しかし、この拒否レスポンスには重要なヒントが含まれています。
 「アクセスするにはトークンが必要です。トークンを発行するための情報はここにありますよ」という案内（`WWW-Authenticate` ヘッダー）が返ってくるのです。
@@ -206,11 +206,14 @@ curl -iX POST http://localhost:3443/mcp \
 # レスポンス（抜粋）
 HTTP/1.1 401 Unauthorized
 ...
-WWW-Authenticate: Bearer realm="http://localhost:3443", ..., resource_metadata="http://localhost:3443/.well-known/oauth-protected-resource/mcp", ...
-...
+WWW-Authenticate: Bearer realm="http://localhost:3443", ...,
+  resource_metadata="http://localhost:3443/.well-known/oauth-protected-resource/mcp", ...
+  scope="mcp:tickets:read"
+  , ...
 ```
 
-ここにある `resource_metadata` のURLが、次のステップへの案内です。
+ここにある `resource_metadata` がMCPサーバーのメタデータを取得するURLです。
+`scope`がこのAPI呼び出しに必要なスコープです。
 
 #### 4.2.2. リソースサーバー（MCPサーバー）のメタデータを取得する
 
@@ -226,7 +229,7 @@ curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp
 
 **結果の確認:**
 
-レスポンス（JSON）の中に `authorization_servers` という項目があります。  
+レスポンス（JSON）の中に `authorization_servers` という項目があります。
 
 ```json
 {
@@ -236,16 +239,13 @@ curl -i http://localhost:3443/.well-known/oauth-protected-resource/mcp
 }
 ```
 
-このURL（`https://vc-issuer.g-trustedweb.workers.dev`）が、今回利用すべき**認可サーバー**です。
+このURL（`https://vc-issuer.g-trustedweb.workers.dev`）が、今回利用する**認可サーバー**です。
 
-> [!NOTE]
-> 今回のデモでは認可サーバーが一つだけですが、実際には認可サーバーは複数の存在する可能性があります。
-> その場合、MCPクライアントはその中から使用する認可サーバーを選択します。
 
 #### 4.2.3. 認可サーバーのメタデータを取得する
 
-認可サーバーがわかったので、次はその**具体的なエンドポイント**を調べます。
-認可サーバーのURLの後ろに `/.well-known/oauth-authorization-server` を付けたURLにアクセスすると、設定情報が取得できます。
+認可サーバーのURLがわかったので、次はそのメタデータを調べます。
+認可サーバーのURLの後ろに `/.well-known/oauth-authorization-server` を付けてアクセスすると、認可サーバーのメタデータが取得できます。
 
 **実行するコマンド:**
 
@@ -258,8 +258,8 @@ curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorizati
 
 レスポンス（JSON）から、以下の3つのURLを確認します。これらが後の手順で使うエンドポイントです。
 
-- `registration_endpoint`: アプリを登録するエンドポイント (`.../connect/register`)
-- `authorization_endpoint`: ユーザーが承認を行う画面のURL (`.../api/authorization`)
+- `registration_endpoint`: MCPクライアントを登録するエンドポイント (`.../connect/register`)
+- `authorization_endpoint`: ユーザーの認可/認証を行うページのURL (`.../api/authorization`)
 - `token_endpoint`: 認可コードをトークンに交換するエンドポイント (`.../api/token`)
 
 ```json
@@ -274,8 +274,9 @@ curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorizati
 
 #### 4.2.4. クライアントを登録する（動的クライアント登録）
 
-認可サーバーを利用するには、まず「私はこういうアプリです」と名乗って登録する必要があります。
-通常は事前に手動登録することもありますが、今回は**その場で自動的に登録する仕組み（動的クライアント登録）** を利用します。
+認可サーバーを利用するには、まず、クライアント登録する必要があります。
+事前に手動登録することもありますが、今回は**その場で自動的に登録する仕組み（動的クライアント登録）** を利用します。
+MCPクライアントは、事前に手動登録できないことも多いためです。
 
 認可サーバーの登録エンドポイントに対して登録リクエストを送ります。
 
@@ -286,19 +287,19 @@ curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorizati
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/connect/register \
     -H "Content-Type: application/json" \
     -d '{
-            "redirect_uris": ["http://localhost:6274/oauth/callback/debug"],
+            "redirect_uris": ["http://localhost:9999/oauth/callback/debug"],
             "token_endpoint_auth_method": "none",
             "grant_types": ["authorization_code", "refresh_token"],
             "response_types": ["code"],
-            "client_name": "MCP Inspector",
-            "client_uri": "https://github.com/modelcontextprotocol/inspector",
+            "client_name": "MCP Client",
+            "client_uri": "http://localhost:9999/oauth",
             "scope": "mcp:tickets:read mcp:tickets:write"
         }'
 ```
 
 **結果の確認と変数の設定:**
 
-レスポンスに含まれる `client_id` は**次のステップで必ず必要になる**重要なIDです。
+レスポンスに含まれる `client_id` が**クライアントID**です。
 
 ```json
 {
@@ -324,6 +325,8 @@ CLIENT_ID="YOUR_CLIENT_ID"
 
 **URLを生成するコマンド:**
 
+MCP認可では、OAuth 2.1 に準拠した Authorization Code Flow を使うことが前提になっており、その中で PKCE 実装が必須とされています。そのため、CODE_VERIFIERとCODE_CHALLENGEを用意します。
+
 ```bash
 # Code Verifier (ランダム文字列) の生成
 CODE_VERIFIER=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=')
@@ -332,7 +335,7 @@ CODE_VERIFIER=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=')
 CODE_CHALLENGE=$(echo -n "$CODE_VERIFIER" | openssl sha256 -binary | openssl base64 | tr '+/' '-_' | tr -d '=')
 
 # 認可リクエスト用URLを表示します
-echo "https://vc-issuer.g-trustedweb.workers.dev/api/authorization?response_type=code&client_id=$CLIENT_ID&code_challenge=$CODE_CHALLENGE&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&state=random_state_value&scope=mcp%3Atickets%3Aread+mcp%3Atickets%3Awrite&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp"
+echo "https://vc-issuer.g-trustedweb.workers.dev/api/authorization?response_type=code&client_id=$CLIENT_ID&code_challenge=$CODE_CHALLENGE&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A9999%2Foauth%2Fcallback%2Fdebug&state=random_state_value&scope=mcp%3Atickets%3Aread+mcp%3Atickets%3Awrite&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp"
 ```
 
 **ブラウザでの操作:**
@@ -348,7 +351,7 @@ echo "https://vc-issuer.g-trustedweb.workers.dev/api/authorization?response_type
 その際、ブラウザのアドレスバー（または画面表示）にある `code=` の後ろの文字列が重要です。これが**認可コード**です。
 
 ```bash
-http://localhost:6274/oauth/callback/debug?state=...&code=MggNs47bcav...&iss=...
+http://localhost:9999/oauth/callback/debug?state=...&code=MggNs47bcav...&iss=...
 ```
 
 この `code` の値（`&`の前まで）をコピーして、変数 `CODE` に設定します。
@@ -369,7 +372,7 @@ CODE="YOUR_CODE"
 # リクエスト
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
-    -d "grant_type=authorization_code&code=$CODE&code_verifier=$CODE_VERIFIER&redirect_uri=http%3A%2F%2Flocalhost%3A6274%2Foauth%2Fcallback%2Fdebug&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp&client_id=$CLIENT_ID"
+    -d "grant_type=authorization_code&code=$CODE&code_verifier=$CODE_VERIFIER&redirect_uri=http%3A%2F%2Flocalhost%3A9999%2Foauth%2Fcallback%2Fdebug&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp&client_id=$CLIENT_ID"
 ```
 
 **結果の確認と変数の設定:**
@@ -408,7 +411,7 @@ curl -iX POST http://localhost:3443/mcp \
 ```
 
 今度は `401 Unauthorized` ではなく、`202 Accepted`（または `200 OK`）が返ってくるはずです。
-これで、認可された状態で安全にMCPサーバーへアクセスできることが確認できました。
+これで、認可された状態でMCPサーバーへアクセスできることが確認できました。
 
 #### 4.2.8. トークンの検証（MCPサーバーの動作確認）
 
@@ -446,65 +449,6 @@ curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/introspect \
   "iss": "https://vc-issuer.g-trustedweb.workers.dev"
 }
 ```
-
-### 4.3. MCP Inspectorを使用した動作確認手順
-
-ここでは、`curl`コマンドではなく、開発者向けのGUIツールである **MCP Inspector** を使用して、視覚的に認可フローを確認します。
-MCP Inspector は、ブラウザ上で動作するMCPクライアントとして振る舞い、認可フロー（OAuth 2.1）を実行してアクセストークンを取得し、MCPサーバーに接続する一連の流れを自動的に行ってくれます。
-
-#### 4.3.1. MCP Inspectorにアクセスする
-
-[セクション 4.1.](#41-ローカルサーバーの起動)でローカルサーバーを起動した際に、ターミナルに以下のようなURLが表示されます。
-このURLをコピーしてブラウザで開いてください。（`MCP_PROXY_AUTH_TOKEN=`以降の値は起動ごとに変わります）
-
-```bash
-[INSPECT]    http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=xxxxxxxx...
-```
-
-#### 4.3.2. MCP Inspectorの準備
-
-MCP Inspectorが開いたら、画面左側の設定パネルを確認します。
-
-1. **Transport Type**: `Streamable HTTP` を選択してください。
-2. **URL**: `http://localhost:3443/mcp` になっていることを確認してください。
-
-![mcp-inspector1](./docs/images/readme/mcp-inspector-oauth1.png)
-
-#### 4.3.3. 認可設定画面を開く
-
-画面右側のメインエリアにある `Open OAuth Settings` ボタンをクリックします。
-
-![mcp-inspector3](./docs/images/readme/mcp-inspector-oauth3.png)
-
-#### 4.3.4. 認可フローを実行する
-
-設定画面（Authentication Settings）の上部中央にある`Quick OAuth Flow` ボタンをクリックすると、認可フローが開始されます。
-
-![mcp-inspector4](./docs/images/readme/mcp-inspector-oauth4.png)
-
-自動的に認可サーバーの同意画面に遷移します。
-以下のデモ用アカウントでログインし、承認を行ってください。
-
-- **ID**: `inga`
-- **PW**: `inga`
-
-承認が完了するとポップアップが閉じ、元の画面に戻ります。
-画面下部の `OAuth Flow Progress` セクションで、各ステップ（メタデータ取得、クライアント登録、認可リクエスト、トークン取得）が成功したことを確認できます。
-
-![mcp-inspector5](./docs/images/readme/mcp-inspector-oauth5.png)
-
-#### 4.3.5. MCPサーバーに接続する
-
-認可フローが完了しアクセストークンが取得できたら、MCPサーバーに接続します。
-画面左側の `Connect` ボタンをクリックしてください。
-
-発行されたアクセストークンを使ってMCPサーバーへの接続が行われます。
-`Connect`ボタンの下のエリアに表示されているステータスが`Connected`になっていれば成功です。
-
-![mcp-inspector8](./docs/images/readme/mcp-inspector-oauth8.png)
-
-画面右側のメインエリアにある `List Tools` ボタンをクリックすると使用可能なツールの一覧が表示され、
-任意のツールを選択して実行することができます。
 
 ## 5. 認可サーバーの主要なエンドポイント
 
