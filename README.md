@@ -375,7 +375,12 @@ CODE="YOUR_CODE"
 # リクエスト
 curl -iX POST https://vc-issuer.g-trustedweb.workers.dev/api/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
-    -d "grant_type=authorization_code&code=$CODE&code_verifier=$CODE_VERIFIER&redirect_uri=http%3A%2F%2Flocalhost%3A9999%2Foauth%2Fcallback%2Fdebug&resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp&client_id=$CLIENT_ID"
+    -d "grant_type=authorization_code" \
+    -d "code=$CODE" \
+    -d "code_verifier=$CODE_VERIFIER" \
+    -d "redirect_uri=http%3A%2F%2Flocalhost%3A9999%2Foauth%2Fcallback%2Fdebug" \
+    -d "resource=http%3A%2F%2Flocalhost%3A3443%2Fmcp" \
+    -d "client_id=$CLIENT_ID"
 ```
 
 **結果の確認と変数の設定:**
