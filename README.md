@@ -321,14 +321,19 @@ CLIENT_ID="YOUR_CLIENT_ID"
 
 MCP認可では、OAuth 2.1 に準拠した Authorization Code Flow を使うことが前提になっており、その中で PKCE 実装が必須とされています。そのため、CODE_VERIFIERとCODE_CHALLENGEを用意します。
 
+##### Code Verifier (ランダム文字列) の生成
 ```bash
-# Code Verifier (ランダム文字列) の生成
 CODE_VERIFIER=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=')
+```
 
-# Code Challenge (Verifierのハッシュ値) の生成
+
+##### Code Challenge (Verifierのハッシュ値) の生成
+```bash
 CODE_CHALLENGE=$(echo -n "$CODE_VERIFIER" | openssl sha256 -binary | openssl base64 | tr '+/' '-_' | tr -d '=')
+```
 
-# 認可リクエスト用URLを生成して表示します
+##### 認可リクエスト用URLを生成して表示します
+```bash
 AUTH_URL="https://vc-issuer.g-trustedweb.workers.dev/api/authorization"
 AUTH_PARAMS="response_type=code"
 AUTH_PARAMS="$AUTH_PARAMS&client_id=$CLIENT_ID"
