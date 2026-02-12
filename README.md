@@ -234,6 +234,7 @@ curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorizati
 - `registration_endpoint`: MCPクライアントを登録するエンドポイント (`.../connect/register`)
 - `authorization_endpoint`: ユーザーの認可/認証を行うページのURL (`.../api/authorization`)
 - `token_endpoint`: 認可コードをトークンに交換するエンドポイント (`.../api/token`)
+- `introspection_endpoint`: リソースサーバーがアクセストークンの詳細を確認するエンドポイント (`.../api/introspect`)
 
 ```json
 {
@@ -241,6 +242,7 @@ curl -i https://vc-issuer.g-trustedweb.workers.dev/.well-known/oauth-authorizati
   "authorization_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/api/authorization",
   "token_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/api/token",
   "registration_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/connect/register",
+  "introspection_endpoint": "https://vc-issuer.g-trustedweb.workers.dev/api/introspect"
   ...
 }
 ```
