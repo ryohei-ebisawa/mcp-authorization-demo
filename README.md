@@ -30,11 +30,14 @@ Authlete を認可サーバーに利用しています。
   - [5.3. 認可エンドポイント](#53-認可エンドポイント)
   - [5.4. トークンエンドポイント](#54-トークンエンドポイント)
   - [5.5. イントロスペクションエンドポイント](#55-イントロスペクションエンドポイント)
-- [6. Authleteコンソール上での各エンドポイントの設定例](#6-authleteコンソール上での各エンドポイントの設定例)
-  - [6.1. 動的クライアント登録エンドポイント](#61-動的クライアント登録エンドポイント)
-  - [6.2. 認可エンドポイント](#62-認可エンドポイント)
-  - [6.3. トークンエンドポイント](#63-トークンエンドポイント)
-  - [6.4. イントロスペクションエンドポイント](#64-イントロスペクションエンドポイント)
+- [6. リソースサーバー（MCPサーバー）のエンドポイント](#6-リソースサーバーmcpサーバーのエンドポイント)
+  - [6.1. Protected Resource Metadata エンドポイント](#61-protected-resource-metadata-エンドポイント)
+  - [6.2. MCP エンドポイント](#62-mcp-エンドポイント)
+- [7. Authleteコンソール上での各エンドポイントの設定例](#7-authleteコンソール上での各エンドポイントの設定例)
+  - [7.1. 動的クライアント登録エンドポイント](#71-動的クライアント登録エンドポイント)
+  - [7.2. 認可エンドポイント](#72-認可エンドポイント)
+  - [7.3. トークンエンドポイント](#73-トークンエンドポイント)
+  - [7.4. イントロスペクションエンドポイント](#74-イントロスペクションエンドポイント)
 - [Credits / Acknowledgments](#credits--acknowledgments)
 
 ## 1. システム構成
@@ -518,21 +521,53 @@ OAuth 2.1（[draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/dra
 MCPサーバーは、クライアントから送られてきたアクセストークンが本物かどうか、期限切れではないか、どのような権限（スコープ）を持っているかを、このエンドポイントに問い合わせて確認します。
 これにより、トークン自体に情報を詰め込まない「リファレンストークン」形式でも安全に検証が可能になります。
 
-## 6. Authleteコンソール上での各エンドポイントの設定例
+## 6. リソースサーバー（MCPサーバー）のエンドポイント
 
-### 6.1. 動的クライアント登録エンドポイント
+ここでは、MCP 認可フローで登場するリソースサーバー（MCPサーバー）側のエンドポイントについて解説します。
+
+### 6.1. Protected Resource Metadata エンドポイント
+
+MCPサーバーが「自分はOAuthで保護されたリソースである」ことを宣言するためのメタデータを公開するエンドポイントです。
+[RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728)（OAuth 2.0 Protected Resource Metadata）で仕様が定義されています。
+
+MCPクライアントは、最初のアクセスで `401 Unauthorized` を受け取った際、`WWW-Authenticate` ヘッダーに含まれる `resource_metadata` のURLからこのメタデータを取得します。
+メタデータには以下のような情報が含まれています。
+
+- **`resource`**: このリソースサーバーのURL（例：`http://localhost:3443/mcp`）
+- **`authorization_servers`**: アクセストークンを発行できる認可サーバーのURL一覧
+- **`scopes_supported`**: サポートしているスコープ（例：`mcp:tickets:read`、`mcp:tickets:write`）
+- **`bearer_methods_supported`**: トークンの送信方法（OAuth 2.1 では `header` のみ）
+
+本プロジェクトでは、以下の2つのパスで同じメタデータを公開しています。
+
+- `/.well-known/oauth-protected-resource`
+- `/.well-known/oauth-protected-resource/mcp`
+
+### 6.2. MCP エンドポイント
+
+MCPプロトコルに基づくリクエストを受け付けるエンドポイントです。
+クライアントは `POST /mcp` に対して JSON-RPC 形式のリクエストを送信し、ツールの一覧取得や実行を行います。
+
+OAuth が有効な場合、リクエストには `Authorization: Bearer <access_token>` ヘッダーが必要です。
+MCPサーバーは、受け取ったアクセストークンを認可サーバーのイントロスペクションエンドポイントに問い合わせて検証し、トークンが有効であれば処理を実行します。
+
+トークンがない場合は `401 Unauthorized` を返し、`WWW-Authenticate` ヘッダーでクライアントに認可フローの開始を促します。
+
+## 7. Authleteコンソール上での各エンドポイントの設定例
+
+### 7.1. 動的クライアント登録エンドポイント
 
 ![console-dcr](./docs/images/readme/console-dcr.png)
 
-### 6.2. 認可エンドポイント
+### 7.2. 認可エンドポイント
 
 ![console-authorization](./docs/images/readme/console-authorization.png)
 
-### 6.3. トークンエンドポイント
+### 7.3. トークンエンドポイント
 
 ![console-token](./docs/images/readme/console-token.png)
 
-### 6.4. イントロスペクションエンドポイント
+### 7.4. イントロスペクションエンドポイント
 
 ![console-introspection](./docs/images/readme/console-introspection.png)
 
